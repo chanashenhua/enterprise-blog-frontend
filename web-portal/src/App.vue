@@ -1,22 +1,43 @@
 <script setup lang="ts">
-import { BookOpenText, Files, FilePenLine, Search } from "lucide-vue-next";
+import { BookOpenText, Files, FilePenLine, Search, Sparkles } from "lucide-vue-next";
 import UserContextSwitcher from "@/components/UserContextSwitcher.vue";
 </script>
 
 <template>
   <div class="app-shell">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
     <header class="topbar">
       <RouterLink class="brand" to="/" aria-label="技术博客首页">
-        <span class="brand-mark"><BookOpenText :size="20" /></span>
-        <span>技术博客</span>
+        <span class="brand-mark"><BookOpenText :size="21" /></span>
+        <span class="brand-copy">
+          <strong>Tech Atlas</strong>
+          <small>工程知识中枢</small>
+        </span>
       </RouterLink>
       <nav aria-label="主导航">
-        <RouterLink to="/search"><Search :size="16" /> 搜索</RouterLink>
-        <RouterLink to="/articles"><Files :size="16" /> 我的文章</RouterLink>
-        <RouterLink to="/articles/new"><FilePenLine :size="16" /> 写文章</RouterLink>
+        <RouterLink to="/"><Sparkles :size="16" /> 首页</RouterLink>
+        <RouterLink to="/search"><Search :size="16" /> 探索</RouterLink>
+        <RouterLink to="/articles"><Files :size="16" /> 创作中心</RouterLink>
       </nav>
-      <UserContextSwitcher />
+      <div class="topbar-actions">
+        <UserContextSwitcher />
+        <RouterLink class="write-shortcut" to="/articles/new">
+          <FilePenLine :size="16" />
+          <span>写文章</span>
+        </RouterLink>
+      </div>
     </header>
-    <main class="page-content"><RouterView /></main>
+    <main class="page-content">
+      <RouterView v-slot="{ Component }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
+    </main>
+    <footer class="site-footer">
+      <span>Tech Atlas · 让工程经验持续产生价值</span>
+      <span>企业内部知识空间</span>
+    </footer>
   </div>
 </template>

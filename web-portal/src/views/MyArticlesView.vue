@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
-import { Eye, FilePenLine, Plus, RotateCcw, Trash2 } from "lucide-vue-next";
+import { ArrowUpRight, Eye, FilePenLine, Globe2, Plus, RotateCcw, Tags, Trash2 } from "lucide-vue-next";
 import { api, type Article } from "@/api/client";
 import { articleStatusLabels, canEditArticle, canWithdrawArticle } from "@/articlePresentation";
 import { useUserContext } from "@/composables/userContext";
@@ -64,8 +64,12 @@ watch(userId, loadArticles);
       <div>
         <p class="eyebrow">创作中心</p>
         <h1>我的文章</h1>
+        <p class="view-description">在一个地方管理草稿、审核状态与已发布内容。</p>
       </div>
-      <RouterLink class="button primary" to="/articles/new"><Plus :size="17" /> 新建文章</RouterLink>
+      <div class="view-header-actions">
+        <span v-if="!loading && !error" class="content-count">{{ articles.length }} 篇内容</span>
+        <RouterLink class="button primary" to="/articles/new"><Plus :size="17" /> 新建文章</RouterLink>
+      </div>
     </header>
 
     <p class="status-message" role="status">{{ message }}</p>
@@ -73,14 +77,20 @@ watch(userId, loadArticles);
     <p v-else-if="loading" class="muted">正在加载文章...</p>
 
     <div v-else-if="articles.length" class="article-management-list">
-      <article v-for="article in articles" :key="article.id" class="article-management-card">
+      <article v-for="(article, index) in articles" :key="article.id" class="article-management-card">
+        <span class="article-card-number">{{ String(index + 1).padStart(2, "0") }}</span>
         <div class="article-card-main">
           <span class="status-badge" :data-status="article.status">{{ articleStatusLabels[article.status] }}</span>
-          <h2><RouterLink :to="`/articles/${article.id}`">{{ article.title }}</RouterLink></h2>
+          <h2>
+            <RouterLink :to="`/articles/${article.id}`">
+              {{ article.title }}
+              <ArrowUpRight :size="17" />
+            </RouterLink>
+          </h2>
           <p>{{ article.plainText || "尚未填写正文" }}</p>
           <div class="article-card-meta">
-            <span>{{ article.visibilityType || "尚未设置可见范围" }}</span>
-            <span>{{ article.tagIds.join(" · ") || "无标签" }}</span>
+            <span><Globe2 :size="14" /> {{ article.visibilityType || "尚未设置可见范围" }}</span>
+            <span><Tags :size="14" /> {{ article.tagIds.join(" · ") || "无标签" }}</span>
           </div>
         </div>
         <div class="article-card-actions">

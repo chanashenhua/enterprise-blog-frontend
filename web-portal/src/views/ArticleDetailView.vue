@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRouter } from "vue-router";
-import { ArrowLeft, Clock3, FilePenLine, History, RotateCcw, Tag, Trash2 } from "lucide-vue-next";
+import { ArrowLeft, Clock3, FilePenLine, FolderOpen, History, RotateCcw, Tag, Trash2, UserRound } from "lucide-vue-next";
 import { api, type Article, type ArticleContentVersion } from "@/api/client";
 import { articleStatusLabels, canEditArticle, canWithdrawArticle } from "@/articlePresentation";
 import { useUserContext } from "@/composables/userContext";
@@ -81,39 +81,48 @@ watch(userId, loadArticle);
     <RouterLink class="back-link" to="/articles"><ArrowLeft :size="16" /> 返回我的文章</RouterLink>
     <p v-if="error" class="error-message">{{ error }}</p>
     <template v-else-if="article">
-      <header class="article-header">
-        <p class="eyebrow">{{ articleStatusLabels[article.status] }}</p>
-        <h1>{{ article.title }}</h1>
-        <div class="article-meta">
-          <span><Clock3 :size="15" /> {{ article.authorId }}</span>
-          <span><Tag :size="15" /> {{ article.tagIds.join(" · ") || "无标签" }}</span>
-          <span>{{ article.categoryId || "未分类" }}</span>
-        </div>
-        <div v-if="canManage" class="article-detail-actions">
-          <RouterLink v-if="canEditArticle(article)" class="button secondary compact" :to="`/articles/${article.id}/edit`">
-            <FilePenLine :size="15" /> 编辑
-          </RouterLink>
-          <button
-            v-if="canWithdrawArticle(article)"
-            class="button secondary compact"
-            type="button"
-            :disabled="busy"
-            @click="withdraw"
-          >
-            <RotateCcw :size="15" /> 撤回
-          </button>
-          <button class="button secondary compact" type="button" :disabled="busy" @click="toggleVersions">
-            <History :size="15" /> {{ versionsVisible ? "收起版本" : "历史版本" }}
-          </button>
-          <button class="button danger compact" type="button" :disabled="busy" @click="remove">
-            <Trash2 :size="15" /> 删除
-          </button>
-        </div>
-      </header>
-      <p class="status-message" role="status">{{ message }}</p>
-      <article class="article-body" v-html="article.renderedHtml"></article>
+      <div class="reading-surface">
+        <header class="article-header">
+          <span class="status-badge" :data-status="article.status">{{ articleStatusLabels[article.status] }}</span>
+          <h1>{{ article.title }}</h1>
+          <div class="article-meta">
+            <span><UserRound :size="15" /> {{ article.authorId }}</span>
+            <span><Tag :size="15" /> {{ article.tagIds.join(" · ") || "无标签" }}</span>
+            <span><FolderOpen :size="15" /> {{ article.categoryId || "未分类" }}</span>
+            <span><Clock3 :size="15" /> 企业知识库</span>
+          </div>
+          <div v-if="canManage" class="article-detail-actions">
+            <RouterLink v-if="canEditArticle(article)" class="button secondary compact" :to="`/articles/${article.id}/edit`">
+              <FilePenLine :size="15" /> 编辑
+            </RouterLink>
+            <button
+              v-if="canWithdrawArticle(article)"
+              class="button secondary compact"
+              type="button"
+              :disabled="busy"
+              @click="withdraw"
+            >
+              <RotateCcw :size="15" /> 撤回
+            </button>
+            <button class="button secondary compact" type="button" :disabled="busy" @click="toggleVersions">
+              <History :size="15" /> {{ versionsVisible ? "收起版本" : "历史版本" }}
+            </button>
+            <button class="button danger compact" type="button" :disabled="busy" @click="remove">
+              <Trash2 :size="15" /> 删除
+            </button>
+          </div>
+        </header>
+        <p class="status-message" role="status">{{ message }}</p>
+        <article class="article-body" v-html="article.renderedHtml"></article>
+      </div>
       <section v-if="versionsVisible" class="version-history" aria-labelledby="version-title">
-        <h2 id="version-title">内容版本</h2>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">变更记录</p>
+            <h2 id="version-title">内容版本</h2>
+          </div>
+          <span>{{ versions.length }} 个版本</span>
+        </div>
         <ol>
           <li v-for="version in versions" :key="version.versionNo">
             <div>
