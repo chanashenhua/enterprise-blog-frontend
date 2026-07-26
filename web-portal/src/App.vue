@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { BookOpenText, Files, FilePenLine, Search, Sparkles } from "lucide-vue-next";
+import { onMounted, watch } from "vue";
+import { Bell, BookOpenText, Files, FilePenLine, Search, Sparkles } from "lucide-vue-next";
 import UserContextSwitcher from "@/components/UserContextSwitcher.vue";
+import { useNotificationState } from "@/composables/notificationState";
+import { useUserContext } from "@/composables/userContext";
+
+const { userId } = useUserContext();
+const { unreadCount, refreshUnreadCount } = useNotificationState();
+
+onMounted(() => refreshUnreadCount(userId.value));
+watch(userId, (current) => refreshUnreadCount(current));
 </script>
 
 <template>
@@ -22,6 +31,10 @@ import UserContextSwitcher from "@/components/UserContextSwitcher.vue";
       </nav>
       <div class="topbar-actions">
         <UserContextSwitcher />
+        <RouterLink class="notification-shortcut" to="/notifications" aria-label="通知中心">
+          <Bell :size="17" />
+          <span v-if="unreadCount" class="notification-badge">{{ unreadCount > 99 ? "99+" : unreadCount }}</span>
+        </RouterLink>
         <RouterLink class="write-shortcut" to="/articles/new">
           <FilePenLine :size="16" />
           <span>写文章</span>

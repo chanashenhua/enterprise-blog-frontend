@@ -36,6 +36,17 @@ export type ArticleInteraction = {
   favorited: boolean;
 };
 
+export type UserNotification = {
+  id: string;
+  type: "REVIEW_APPROVED" | "REVIEW_REJECTED" | "COMMENT_REPLY" | string;
+  title: string;
+  content: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  read: boolean;
+  createdAt: string;
+};
+
 export type SearchArticle = {
   articleId: string;
   title: string;
@@ -161,6 +172,18 @@ export const api = {
     return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/favorites`, {
       method: favorited ? "PUT" : "DELETE",
     });
+  },
+  listNotifications(userId: MockUserId) {
+    return request<UserNotification[]>(userId, "/notifications");
+  },
+  notificationUnreadCount(userId: MockUserId) {
+    return request<{ count: number }>(userId, "/notifications/unread-count");
+  },
+  markNotificationRead(userId: MockUserId, notificationId: string) {
+    return request<UserNotification>(userId, `/notifications/${notificationId}/read`, { method: "PUT" });
+  },
+  markAllNotificationsRead(userId: MockUserId) {
+    return request<{ count: number }>(userId, "/notifications/read-all", { method: "PUT" });
   },
   search(userId: MockUserId, query: string) {
     return request<SearchResponse>(userId, `/search/articles?q=${encodeURIComponent(query)}`);

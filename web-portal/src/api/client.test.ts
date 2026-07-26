@@ -74,4 +74,18 @@ describe("buildMockUserHeaders", () => {
       expect.objectContaining({ method: "DELETE" }),
     );
   });
+
+  it("loads the current users notification inbox", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("[]", {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.listNotifications("u-author");
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/notifications");
+    expect((init.headers as Headers).get("X-Mock-User")).toBe("u-author");
+  });
 });

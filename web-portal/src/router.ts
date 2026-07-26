@@ -3,6 +3,7 @@ import ArticleDetailView from "./views/ArticleDetailView.vue";
 import ArticleEditorView from "./views/ArticleEditorView.vue";
 import HomeView from "./views/HomeView.vue";
 import MyArticlesView from "./views/MyArticlesView.vue";
+import NotificationsView from "./views/NotificationsView.vue";
 import SearchView from "./views/SearchView.vue";
 
 export default createRouter({
@@ -13,6 +14,7 @@ export default createRouter({
     { path: "/articles/new", component: ArticleEditorView },
     { path: "/articles/:id/edit", component: ArticleEditorView, props: true },
     { path: "/articles/:id", component: ArticleDetailView, props: true },
+    { path: "/notifications", component: NotificationsView },
     { path: "/search", component: SearchView },
   ],
 });
