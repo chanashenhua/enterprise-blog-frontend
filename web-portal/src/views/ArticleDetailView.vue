@@ -1,8 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRouter } from "vue-router";
-import { ArrowLeft, Clock3, FilePenLine, FolderOpen, History, RotateCcw, Tag, Trash2, UserRound } from "lucide-vue-next";
-import { api, type Article, type ArticleContentVersion } from "@/api/client";
+import {
+  ArrowLeft,
+  Bookmark,
+  Clock3,
+  Eye,
+  FilePenLine,
+  FolderOpen,
+  Heart,
+  History,
+  RotateCcw,
+  Tag,
+  Trash2,
+  UserRound,
+} from "lucide-vue-next";
+import { api, type Article, type ArticleContentVersion, type ArticleInteraction } from "@/api/client";
 import { articleStatusLabels, canEditArticle, canWithdrawArticle } from "@/articlePresentation";
 import { useUserContext } from "@/composables/userContext";
 
@@ -11,21 +24,60 @@ const router = useRouter();
 const { userId } = useUserContext();
 const article = ref<Article>();
 const versions = ref<ArticleContentVersion[]>([]);
+const interaction = ref<ArticleInteraction>();
 const versionsVisible = ref(false);
 const busy = ref(false);
+const interactionBusy = ref(false);
 const error = ref("");
 const message = ref("");
+const interactionMessage = ref("");
 const canManage = computed(() => article.value?.authorId === userId.value || userId.value === "u-admin");
 
 async function loadArticle() {
   error.value = "";
   article.value = undefined;
+  interaction.value = undefined;
   versions.value = [];
   versionsVisible.value = false;
+  interactionMessage.value = "";
   try {
-    article.value = await api.getArticle(userId.value, props.id);
+    const loaded = await api.getArticle(userId.value, props.id);
+    article.value = loaded;
+    if (loaded.status === "PUBLISHED") {
+      try {
+        interaction.value = await api.recordArticleView(userId.value, loaded.id);
+      } catch (reason) {
+        interactionMessage.value = reason instanceof Error ? reason.message : "互动数据暂时不可用";
+      }
+    }
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : "文章加载失败";
+  }
+}
+
+async function toggleLike() {
+  if (!article.value || !interaction.value || interactionBusy.value) return;
+  interactionBusy.value = true;
+  interactionMessage.value = "";
+  try {
+    interaction.value = await api.setArticleLike(userId.value, article.value.id, !interaction.value.liked);
+  } catch (reason) {
+    interactionMessage.value = reason instanceof Error ? reason.message : "点赞操作失败";
+  } finally {
+    interactionBusy.value = false;
+  }
+}
+
+async function toggleFavorite() {
+  if (!article.value || !interaction.value || interactionBusy.value) return;
+  interactionBusy.value = true;
+  interactionMessage.value = "";
+  try {
+    interaction.value = await api.setArticleFavorite(userId.value, article.value.id, !interaction.value.favorited);
+  } catch (reason) {
+    interactionMessage.value = reason instanceof Error ? reason.message : "收藏操作失败";
+  } finally {
+    interactionBusy.value = false;
   }
 }
 
@@ -91,6 +143,30 @@ watch(userId, loadArticle);
             <span><FolderOpen :size="15" /> {{ article.categoryId || "未分类" }}</span>
             <span><Clock3 :size="15" /> 企业知识库</span>
           </div>
+          <div v-if="article.status === 'PUBLISHED'" class="article-interactions">
+            <span class="view-count"><Eye :size="17" /> {{ interaction?.viewCount ?? "—" }} 次阅读</span>
+            <button
+              class="interaction-button"
+              :class="{ active: interaction?.liked }"
+              type="button"
+              :disabled="interactionBusy || !interaction"
+              :aria-pressed="interaction?.liked ?? false"
+              @click="toggleLike"
+            >
+              <Heart :size="17" /> {{ interaction?.likeCount ?? 0 }} {{ interaction?.liked ? "已点赞" : "点赞" }}
+            </button>
+            <button
+              class="interaction-button"
+              :class="{ active: interaction?.favorited }"
+              type="button"
+              :disabled="interactionBusy || !interaction"
+              :aria-pressed="interaction?.favorited ?? false"
+              @click="toggleFavorite"
+            >
+              <Bookmark :size="17" /> {{ interaction?.favoriteCount ?? 0 }} {{ interaction?.favorited ? "已收藏" : "收藏" }}
+            </button>
+          </div>
+          <p v-if="interactionMessage" class="interaction-message" role="status">{{ interactionMessage }}</p>
           <div v-if="canManage" class="article-detail-actions">
             <RouterLink v-if="canEditArticle(article)" class="button secondary compact" :to="`/articles/${article.id}/edit`">
               <FilePenLine :size="15" /> 编辑

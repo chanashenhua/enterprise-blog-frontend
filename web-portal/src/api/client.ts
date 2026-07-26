@@ -27,6 +27,15 @@ export type ArticleContentVersion = {
   createdAt: string;
 };
 
+export type ArticleInteraction = {
+  articleId: string;
+  viewCount: number;
+  likeCount: number;
+  favoriteCount: number;
+  liked: boolean;
+  favorited: boolean;
+};
+
 export type SearchArticle = {
   articleId: string;
   title: string;
@@ -139,6 +148,19 @@ export const api = {
   },
   deleteArticle(userId: MockUserId, articleId: string) {
     return request<Article>(userId, `/articles/${articleId}`, { method: "DELETE" });
+  },
+  recordArticleView(userId: MockUserId, articleId: string) {
+    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/views`, { method: "POST" });
+  },
+  setArticleLike(userId: MockUserId, articleId: string, liked: boolean) {
+    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/likes`, {
+      method: liked ? "PUT" : "DELETE",
+    });
+  },
+  setArticleFavorite(userId: MockUserId, articleId: string, favorited: boolean) {
+    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/favorites`, {
+      method: favorited ? "PUT" : "DELETE",
+    });
   },
   search(userId: MockUserId, query: string) {
     return request<SearchResponse>(userId, `/search/articles?q=${encodeURIComponent(query)}`);

@@ -1065,6 +1065,56 @@ h2 {
   flex-wrap: wrap;
 }
 
+.article-interactions {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.view-count,
+.interaction-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(24, 51, 47, 0.12);
+  border-radius: 999px;
+  color: #687a75;
+  background: rgba(24, 51, 47, 0.035);
+  font-size: 11px;
+}
+
+.interaction-button {
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.interaction-button:hover:not(:disabled) {
+  border-color: rgba(22, 131, 111, 0.35);
+  color: var(--emerald);
+  background: var(--mint);
+  transform: translateY(-1px);
+}
+
+.interaction-button.active {
+  border-color: rgba(22, 131, 111, 0.28);
+  color: var(--emerald);
+  background: var(--mint);
+}
+
+.interaction-button.active svg {
+  fill: currentColor;
+}
+
+.interaction-message {
+  margin: 10px 0 0;
+  color: #9a5b38;
+  font-size: 11px;
+}
+
 .article-body {
   padding-top: 40px;
   color: #334b46;

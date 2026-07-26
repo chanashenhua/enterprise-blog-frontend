@@ -31,10 +31,10 @@ describe("buildMockUserHeaders", () => {
   });
 
   it("sends the full draft projection when updating an article", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}", {
       status: 200,
       headers: { "Content-Type": "application/json" },
-    }));
+    })));
     vi.stubGlobal("fetch", fetchMock);
 
     await api.updateDraft("u-author", "article-1", "新标题", "新正文", ["java"], "backend");
@@ -51,5 +51,27 @@ describe("buildMockUserHeaders", () => {
       tagIds: ["java"],
       categoryId: "backend",
     });
+  });
+
+  it("uses idempotent endpoints for article likes and favorites", async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}", {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.setArticleLike("u-reader", "article-1", true);
+    await api.setArticleFavorite("u-reader", "article-1", false);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/articles/article-1/interactions/likes",
+      expect.objectContaining({ method: "PUT" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/articles/article-1/interactions/favorites",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 });
