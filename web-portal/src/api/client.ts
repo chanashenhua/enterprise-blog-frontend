@@ -36,6 +36,12 @@ export type ArticleInteraction = {
   favorited: boolean;
 };
 
+export type PersonalInteractionItem = {
+  articleId: string;
+  interactionType: "FAVORITE" | "VIEW" | string;
+  interactedAt: string;
+};
+
 export type UserNotification = {
   id: string;
   type: "REVIEW_APPROVED" | "REVIEW_REJECTED" | "COMMENT_REPLY" | string;
@@ -172,6 +178,12 @@ export const api = {
     return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/favorites`, {
       method: favorited ? "PUT" : "DELETE",
     });
+  },
+  listFavoriteArticles(userId: MockUserId, limit = 50) {
+    return request<PersonalInteractionItem[]>(userId, `/me/knowledge/favorites?limit=${limit}`);
+  },
+  listRecentViews(userId: MockUserId, limit = 50) {
+    return request<PersonalInteractionItem[]>(userId, `/me/knowledge/recent-views?limit=${limit}`);
   },
   listNotifications(userId: MockUserId) {
     return request<UserNotification[]>(userId, "/notifications");

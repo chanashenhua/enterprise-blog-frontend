@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
-import { Bell, BookOpenText, Files, FilePenLine, Search, Sparkles } from "lucide-vue-next";
+import { Bell, BookMarked, BookOpenText, Files, FilePenLine, Search, Sparkles } from "lucide-vue-next";
 import UserContextSwitcher from "@/components/UserContextSwitcher.vue";
 import { useNotificationState } from "@/composables/notificationState";
 import { useUserContext } from "@/composables/userContext";
@@ -27,6 +27,7 @@ watch(userId, (current) => refreshUnreadCount(current));
       <nav aria-label="主导航">
         <RouterLink to="/"><Sparkles :size="16" /> 首页</RouterLink>
         <RouterLink to="/search"><Search :size="16" /> 探索</RouterLink>
+        <RouterLink to="/library"><BookMarked :size="16" /> 知识库</RouterLink>
         <RouterLink to="/articles"><Files :size="16" /> 创作中心</RouterLink>
       </nav>
       <div class="topbar-actions">
