@@ -39,6 +39,31 @@ export type AdminInteractionOverview = {
   engagedUserCount: number;
   topArticles: ArticleInteractionRanking[];
 };
+export type NotificationTypeSummary = { type: string; totalCount: number; unreadCount: number };
+export type NotificationGovernanceOverview = {
+  totalCount: number;
+  unreadCount: number;
+  readCount: number;
+  recipientCount: number;
+  typeSummaries: NotificationTypeSummary[];
+};
+export type AdminNotificationRecord = {
+  id: string;
+  eventId: string;
+  recipientUserId: string;
+  type: string;
+  title: string;
+  content: string;
+  resourceType?: string;
+  resourceId?: string;
+  read: boolean;
+  createdAt: string;
+};
+export type NotificationGovernanceFilters = {
+  recipientUserId?: string;
+  type?: string;
+  state?: "ALL" | "READ" | "UNREAD";
+};
 
 const headers = () => {
   const values = new Headers({
@@ -73,4 +98,13 @@ export const api = {
     return request<AuditRecord[]>(`/admin/audits${query}`);
   },
   interactionOverview: (limit = 10) => request<AdminInteractionOverview>(`/admin/stats/overview?limit=${limit}`),
+  notificationGovernanceOverview: () => request<NotificationGovernanceOverview>("/admin/notifications/overview"),
+  adminNotifications: (filters: NotificationGovernanceFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.size ? `?${params.toString()}` : "";
+    return request<AdminNotificationRecord[]>(`/admin/notifications${query}`);
+  },
 };
