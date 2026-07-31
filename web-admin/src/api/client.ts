@@ -24,6 +24,21 @@ export type AuditFilters = {
   from?: string;
   to?: string;
 };
+export type ArticleInteractionRanking = {
+  articleId: string;
+  viewCount: number;
+  likeCount: number;
+  favoriteCount: number;
+  engagementCount: number;
+};
+export type AdminInteractionOverview = {
+  viewCount: number;
+  likeCount: number;
+  favoriteCount: number;
+  activeArticleCount: number;
+  engagedUserCount: number;
+  topArticles: ArticleInteractionRanking[];
+};
 
 const headers = () => {
   const values = new Headers({
@@ -57,4 +72,5 @@ export const api = {
     const query = params.size ? `?${params.toString()}` : "";
     return request<AuditRecord[]>(`/admin/audits${query}`);
   },
+  interactionOverview: (limit = 10) => request<AdminInteractionOverview>(`/admin/stats/overview?limit=${limit}`),
 };
