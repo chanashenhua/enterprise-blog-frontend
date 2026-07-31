@@ -8,6 +8,7 @@ import {
   CheckCheck,
   Inbox,
   MessageSquareReply,
+  Rss,
   ShieldCheck,
 } from "lucide-vue-next";
 import { api, type UserNotification } from "@/api/client";
@@ -59,7 +60,9 @@ async function markAllRead() {
 }
 
 function notificationIcon(type: string) {
-  return type === "COMMENT_REPLY" ? MessageSquareReply : ShieldCheck;
+  if (type === "COMMENT_REPLY") return MessageSquareReply;
+  if (type === "SUBSCRIPTION_ARTICLE_PUBLISHED") return Rss;
+  return ShieldCheck;
 }
 
 function resourceLink(notification: UserNotification) {
@@ -78,7 +81,7 @@ watch(userId, loadNotifications);
       <div>
         <p class="eyebrow"><Bell :size="14" /> 消息中心</p>
         <h1>站内通知</h1>
-        <p class="view-description">审核结果和评论回复会在这里集中呈现。</p>
+        <p class="view-description">审核结果、评论回复和订阅更新会在这里集中呈现。</p>
       </div>
       <button class="button secondary" type="button" :disabled="!unreadCount || Boolean(busyId)" @click="markAllRead">
         <CheckCheck :size="17" /> 全部标为已读
@@ -125,7 +128,7 @@ watch(userId, loadNotifications);
     <div v-else class="empty-state">
       <Inbox :size="28" />
       <h2>暂时没有通知</h2>
-      <p>审核结果和评论回复到来后，会出现在这里。</p>
+      <p>审核结果、评论回复和订阅更新到来后，会出现在这里。</p>
     </div>
   </section>
 </template>

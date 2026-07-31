@@ -6,6 +6,7 @@ import KnowledgeLibraryView from "./views/KnowledgeLibraryView.vue";
 import MyArticlesView from "./views/MyArticlesView.vue";
 import NotificationsView from "./views/NotificationsView.vue";
 import SearchView from "./views/SearchView.vue";
+import SubscriptionsView from "./views/SubscriptionsView.vue";
 
 export default createRouter({
   history: createWebHistory(),
@@ -18,5 +19,6 @@ export default createRouter({
     { path: "/library", component: KnowledgeLibraryView },
     { path: "/notifications", component: NotificationsView },
     { path: "/search", component: SearchView },
+    { path: "/subscriptions", component: SubscriptionsView },
   ],
 });

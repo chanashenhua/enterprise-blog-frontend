@@ -3,5 +3,6 @@ import App from "./App.vue";
 import router from "./router";
 import "./styles.css";
 import "./library.css";
+import "./subscriptions.css";
 
 createApp(App).use(router).mount("#app");

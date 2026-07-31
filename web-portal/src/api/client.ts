@@ -42,6 +42,20 @@ export type PersonalInteractionItem = {
   interactedAt: string;
 };
 
+export type CatalogItem = {
+  id: string;
+  name: string;
+  active: boolean;
+};
+
+export type ContentSubscription = {
+  id: string;
+  userId: string;
+  targetType: "TAG" | "CATEGORY";
+  targetId: string;
+  createdAt: string;
+};
+
 export type UserNotification = {
   id: string;
   type: "REVIEW_APPROVED" | "REVIEW_REJECTED" | "COMMENT_REPLY" | string;
@@ -115,6 +129,7 @@ async function request<T>(userId: MockUserId, path: string, init: RequestInit = 
       throw reason;
     }
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -184,6 +199,29 @@ export const api = {
   },
   listRecentViews(userId: MockUserId, limit = 50) {
     return request<PersonalInteractionItem[]>(userId, `/me/knowledge/recent-views?limit=${limit}`);
+  },
+  listTags(userId: MockUserId) {
+    return request<CatalogItem[]>(userId, "/tags");
+  },
+  listCategories(userId: MockUserId) {
+    return request<CatalogItem[]>(userId, "/categories");
+  },
+  listSubscriptions(userId: MockUserId) {
+    return request<ContentSubscription[]>(userId, "/subscriptions");
+  },
+  subscribe(userId: MockUserId, targetType: ContentSubscription["targetType"], targetId: string) {
+    return request<ContentSubscription>(
+      userId,
+      `/subscriptions/${targetType}/${encodeURIComponent(targetId)}`,
+      { method: "PUT" },
+    );
+  },
+  unsubscribe(userId: MockUserId, targetType: ContentSubscription["targetType"], targetId: string) {
+    return request<void>(
+      userId,
+      `/subscriptions/${targetType}/${encodeURIComponent(targetId)}`,
+      { method: "DELETE" },
+    );
   },
   listNotifications(userId: MockUserId) {
     return request<UserNotification[]>(userId, "/notifications");
