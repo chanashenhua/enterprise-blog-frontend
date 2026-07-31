@@ -1,6 +1,29 @@
 export type ReviewTicket = { id: string; articleId: string; status: string };
 export type SearchTask = { id: string; articleId: string; status: string; retryCount: number };
 export type Tag = { id: string; name: string };
+export type AuditRecord = {
+  id: string;
+  eventId: string;
+  sourceService: string;
+  actorId: string;
+  actorRoles: string[];
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  outcome: string;
+  details?: string;
+  traceId?: string;
+  occurredAt: string;
+  createdAt: string;
+};
+export type AuditFilters = {
+  actorId?: string;
+  action?: string;
+  resourceType?: string;
+  resourceId?: string;
+  from?: string;
+  to?: string;
+};
 
 const headers = () => {
   const values = new Headers({
@@ -26,4 +49,12 @@ export const api = {
   searchTasks: () => request<SearchTask[]>("/admin/search/tasks"),
   retryTask: (id: string) => request<void>(`/admin/search/tasks/${id}/retry`, { method: "POST" }),
   tags: () => request<Tag[]>("/admin/tags"),
+  audits: (filters: AuditFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.size ? `?${params.toString()}` : "";
+    return request<AuditRecord[]>(`/admin/audits${query}`);
+  },
 };
