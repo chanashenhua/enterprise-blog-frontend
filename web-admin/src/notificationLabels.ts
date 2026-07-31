@@ -3,6 +3,7 @@ export const notificationTypeLabels: Record<string, string> = {
   REVIEW_REJECTED: "审核驳回",
   COMMENT_REPLY: "评论回复",
   ARTICLE_PUBLISHED: "文章发布",
+  SUBSCRIPTION_ARTICLE_PUBLISHED: "订阅文章发布",
 };
 
 export function notificationTypeLabel(type: string) {

@@ -61,7 +61,7 @@ onMounted(load);
 
     <form class="governance-filters" @submit.prevent="load">
       <label><span>接收员工</span><input v-model="filters.recipientUserId" placeholder="例如 u-author" /></label>
-      <label><span>通知类型</span><select v-model="filters.type"><option value="">全部类型</option><option value="REVIEW_APPROVED">审核通过</option><option value="REVIEW_REJECTED">审核驳回</option><option value="COMMENT_REPLY">评论回复</option><option value="ARTICLE_PUBLISHED">文章发布</option></select></label>
+      <label><span>通知类型</span><select v-model="filters.type"><option value="">全部类型</option><option value="REVIEW_APPROVED">审核通过</option><option value="REVIEW_REJECTED">审核驳回</option><option value="COMMENT_REPLY">评论回复</option><option value="SUBSCRIPTION_ARTICLE_PUBLISHED">订阅文章发布</option></select></label>
       <label><span>阅读状态</span><select v-model="filters.state"><option value="ALL">全部状态</option><option value="UNREAD">未读</option><option value="READ">已读</option></select></label>
       <div class="filter-actions"><button class="button primary" type="submit"><Search :size="16"/> 查询</button><button class="button secondary" type="button" @click="reset">重置</button></div>
     </form>

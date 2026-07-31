@@ -1,0 +1,245 @@
+.comment-success {
+  margin: 0 0 18px;
+  color: #16725e;
+  font-size: 13px;
+}
+
+.comment-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.comment-metrics article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #dbe3df;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.comment-metrics svg {
+  grid-row: 1 / span 2;
+  color: #1c7a68;
+}
+
+.comment-metrics strong {
+  color: #203833;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+}
+
+.comment-metrics span {
+  color: #71817c;
+  font-size: 11px;
+}
+
+.comment-filters {
+  grid-template-columns: 1fr 1fr 0.8fr auto;
+}
+
+.comment-governance-table {
+  overflow: hidden;
+  border: 1px solid #dbe3df;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.comment-governance-row {
+  display: grid;
+  grid-template-columns: 190px minmax(280px, 1.5fr) minmax(170px, 0.8fr) 145px;
+  gap: 18px;
+  align-items: center;
+  padding: 17px 19px;
+  border-bottom: 1px solid #edf1ef;
+}
+
+.comment-governance-row:last-child {
+  border-bottom: 0;
+}
+
+.comment-governance-head {
+  color: #71817c;
+  background: #f3f6f4;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.comment-origin,
+.comment-resource,
+.comment-state-actions {
+  display: grid;
+  gap: 5px;
+}
+
+.comment-origin strong,
+.comment-resource strong {
+  overflow: hidden;
+  color: #334b45;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comment-origin small,
+.comment-resource small,
+.comment-content small {
+  overflow: hidden;
+  color: #899590;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comment-content p {
+  margin: 0 0 6px;
+  color: #3e524d;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.comment-state {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #21715f;
+  background: #e0efe9;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.comment-state[data-status="HIDDEN"] {
+  color: #a04e31;
+  background: #f6e7df;
+}
+
+.comment-state[data-status="DELETED"] {
+  color: #6f7976;
+  background: #e8ecea;
+}
+
+.comment-state-actions .text-action {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  color: #237765;
+  background: transparent;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.comment-state-actions .danger-text {
+  color: #a44d32;
+}
+
+.governance-dialog-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: rgba(18, 34, 31, 0.48);
+  backdrop-filter: blur(4px);
+}
+
+.governance-dialog {
+  position: relative;
+  width: min(500px, 100%);
+  padding: 30px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(18, 34, 31, 0.25);
+}
+
+.dialog-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  color: #788782;
+  background: #f0f3f1;
+  cursor: pointer;
+}
+
+.dialog-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 16px;
+  place-items: center;
+  border-radius: 14px;
+  color: #a44d32;
+  background: #f6e7df;
+}
+
+.governance-dialog h2 {
+  margin: 5px 0 12px;
+  color: #203833;
+  font-size: 25px;
+}
+
+.dialog-comment {
+  margin-bottom: 18px;
+  padding: 13px;
+  border-left: 3px solid #c9d9d4;
+  color: #63736e;
+  background: #f5f7f6;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.governance-dialog label span {
+  display: block;
+  margin-bottom: 7px;
+  color: #425751;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.governance-dialog textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccd7d3;
+  border-radius: 10px;
+  color: #263e38;
+  font: inherit;
+  resize: vertical;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1050px) {
+  .comment-governance-row {
+    grid-template-columns: 150px minmax(240px, 1fr) 150px 120px;
+  }
+}
+
+@media (max-width: 850px) {
+  .comment-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .comment-governance-table {
+    overflow-x: auto;
+  }
+
+  .comment-governance-row {
+    min-width: 850px;
+  }
+}

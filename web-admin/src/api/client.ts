@@ -64,6 +64,22 @@ export type NotificationGovernanceFilters = {
   type?: string;
   state?: "ALL" | "READ" | "UNREAD";
 };
+export type CommentStatus = "ACTIVE" | "HIDDEN" | "DELETED";
+export type AdminCommentRecord = {
+  id: string;
+  articleId: string;
+  parentId?: string;
+  authorId: string;
+  content: string;
+  status: CommentStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+export type CommentGovernanceFilters = {
+  articleId?: string;
+  authorId?: string;
+  status?: "ALL" | CommentStatus;
+};
 
 const headers = () => {
   const values = new Headers({
@@ -107,4 +123,20 @@ export const api = {
     const query = params.size ? `?${params.toString()}` : "";
     return request<AdminNotificationRecord[]>(`/admin/notifications${query}`);
   },
+  adminComments: (filters: CommentGovernanceFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.size ? `?${params.toString()}` : "";
+    return request<AdminCommentRecord[]>(`/admin/comments${query}`);
+  },
+  hideComment: (commentId: string, reason: string) => request<AdminCommentRecord>(
+    `/admin/comments/${commentId}/hide`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  ),
+  restoreComment: (commentId: string, reason: string) => request<AdminCommentRecord>(
+    `/admin/comments/${commentId}/restore`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  ),
 };
