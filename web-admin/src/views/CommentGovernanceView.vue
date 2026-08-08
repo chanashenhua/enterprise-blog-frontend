@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Search, ShieldAlert, Trash2, X } from "lucide-vue-next";
-import { api, type AdminCommentRecord, type CommentStatus } from "@/api/client";
+import { api, type AdminCommentRecord, type CommentGovernanceOverview, type CommentStatus } from "@/api/client";
 import { commentStatusLabels, commentSummary } from "@/commentLabels";
 import { localDateTime } from "@/auditLabels";
 
 type GovernanceAction = "hide" | "restore";
 
 const records = ref<AdminCommentRecord[]>([]);
+const overview = ref<CommentGovernanceOverview | null>(null);
 const filters = reactive({ articleId: "", authorId: "", status: "ALL" as "ALL" | CommentStatus });
 const loading = ref(false);
 const busyId = ref("");
@@ -16,22 +17,18 @@ const actionTarget = ref<AdminCommentRecord | null>(null);
 const action = ref<GovernanceAction>("hide");
 const reason = ref("");
 
-const counts = computed(() => ({
-  total: records.value.length,
-  active: records.value.filter((record) => record.status === "ACTIVE").length,
-  hidden: records.value.filter((record) => record.status === "HIDDEN").length,
-  deleted: records.value.filter((record) => record.status === "DELETED").length,
-}));
-
 async function load() {
   loading.value = true;
   message.value = "";
   try {
-    records.value = await api.adminComments({
-      articleId: filters.articleId.trim() || undefined,
-      authorId: filters.authorId.trim() || undefined,
-      status: filters.status,
-    });
+    [overview.value, records.value] = await Promise.all([
+      api.commentGovernanceOverview(),
+      api.adminComments({
+        articleId: filters.articleId.trim() || undefined,
+        authorId: filters.authorId.trim() || undefined,
+        status: filters.status,
+      }),
+    ]);
   } catch (error) {
     message.value = error instanceof Error ? error.message : "评论治理数据加载失败";
   } finally {
@@ -66,6 +63,7 @@ async function confirmAction() {
       ? await api.hideComment(target.id, reason.value.trim())
       : await api.restoreComment(target.id, reason.value.trim());
     records.value = records.value.map((record) => record.id === updated.id ? updated : record);
+    overview.value = await api.commentGovernanceOverview();
     message.value = action.value === "hide" ? "评论已隐藏，审计事件已记录。" : "评论已恢复，审计事件已记录。";
     actionTarget.value = null;
   } catch (error) {
@@ -91,11 +89,11 @@ onMounted(load);
 
     <p v-if="message" :class="message.includes('失败') ? 'error' : 'comment-success'" role="status">{{ message }}</p>
 
-    <div class="comment-metrics">
-      <article><MessageSquare :size="19"/><strong>{{ counts.total }}</strong><span>当前结果</span></article>
-      <article><Eye :size="19"/><strong>{{ counts.active }}</strong><span>正常展示</span></article>
-      <article><EyeOff :size="19"/><strong>{{ counts.hidden }}</strong><span>治理隐藏</span></article>
-      <article><Trash2 :size="19"/><strong>{{ counts.deleted }}</strong><span>用户删除</span></article>
+    <div v-if="overview" class="comment-metrics">
+      <article><MessageSquare :size="19"/><strong>{{ overview.totalCount }}</strong><span>评论总数 · {{ overview.articleCount }} 篇文章</span></article>
+      <article><Eye :size="19"/><strong>{{ overview.activeCount }}</strong><span>正常展示</span></article>
+      <article><EyeOff :size="19"/><strong>{{ overview.hiddenCount }}</strong><span>治理隐藏</span></article>
+      <article><Trash2 :size="19"/><strong>{{ overview.deletedCount }}</strong><span>用户删除 · {{ overview.authorCount }} 名作者</span></article>
     </div>
 
     <form class="governance-filters comment-filters" @submit.prevent="load">

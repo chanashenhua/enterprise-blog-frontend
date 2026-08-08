@@ -64,6 +64,18 @@ export type NotificationGovernanceFilters = {
   type?: string;
   state?: "ALL" | "READ" | "UNREAD";
 };
+export type SubscriptionTargetSummary = {
+  targetType: "TAG" | "CATEGORY";
+  targetId: string;
+  subscriberCount: number;
+};
+export type SubscriptionGovernanceOverview = {
+  totalSubscriptionCount: number;
+  subscriberCount: number;
+  tagSubscriptionCount: number;
+  categorySubscriptionCount: number;
+  topTargets: SubscriptionTargetSummary[];
+};
 export type CommentStatus = "ACTIVE" | "HIDDEN" | "DELETED";
 export type AdminCommentRecord = {
   id: string;
@@ -79,6 +91,14 @@ export type CommentGovernanceFilters = {
   articleId?: string;
   authorId?: string;
   status?: "ALL" | CommentStatus;
+};
+export type CommentGovernanceOverview = {
+  totalCount: number;
+  activeCount: number;
+  hiddenCount: number;
+  deletedCount: number;
+  articleCount: number;
+  authorCount: number;
 };
 
 const headers = () => {
@@ -115,6 +135,9 @@ export const api = {
   },
   interactionOverview: (limit = 10) => request<AdminInteractionOverview>(`/admin/stats/overview?limit=${limit}`),
   notificationGovernanceOverview: () => request<NotificationGovernanceOverview>("/admin/notifications/overview"),
+  subscriptionGovernanceOverview: () => request<SubscriptionGovernanceOverview>(
+    "/admin/notifications/subscriptions/overview",
+  ),
   adminNotifications: (filters: NotificationGovernanceFilters = {}) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -131,6 +154,7 @@ export const api = {
     const query = params.size ? `?${params.toString()}` : "";
     return request<AdminCommentRecord[]>(`/admin/comments${query}`);
   },
+  commentGovernanceOverview: () => request<CommentGovernanceOverview>("/admin/comments/overview"),
   hideComment: (commentId: string, reason: string) => request<AdminCommentRecord>(
     `/admin/comments/${commentId}/hide`,
     { method: "POST", body: JSON.stringify({ reason }) },

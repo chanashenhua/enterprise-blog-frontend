@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { Bell, CheckCheck, Inbox, RefreshCw, Search, Users } from "lucide-vue-next";
-import { api, type AdminNotificationRecord, type NotificationGovernanceOverview } from "@/api/client";
+import { Bell, CheckCheck, FolderTree, Hash, Inbox, RefreshCw, Search, Users } from "lucide-vue-next";
+import { api, type AdminNotificationRecord, type NotificationGovernanceOverview, type SubscriptionGovernanceOverview } from "@/api/client";
 import { localDateTime } from "@/auditLabels";
 import { notificationTypeLabel, unreadRate } from "@/notificationLabels";
 
 const overview = ref<NotificationGovernanceOverview | null>(null);
+const subscriptionOverview = ref<SubscriptionGovernanceOverview | null>(null);
 const records = ref<AdminNotificationRecord[]>([]);
 const filters = reactive({ recipientUserId: "", type: "", state: "ALL" as "ALL" | "READ" | "UNREAD" });
 const loading = ref(false);
@@ -15,8 +16,9 @@ async function load() {
   loading.value = true;
   message.value = "";
   try {
-    [overview.value, records.value] = await Promise.all([
+    [overview.value, subscriptionOverview.value, records.value] = await Promise.all([
       api.notificationGovernanceOverview(),
+      api.subscriptionGovernanceOverview(),
       api.adminNotifications({
         recipientUserId: filters.recipientUserId.trim() || undefined,
         type: filters.type || undefined,
@@ -58,6 +60,20 @@ onMounted(load);
         <strong>{{ notificationTypeLabel(summary.type) }}</strong><span>{{ summary.totalCount }} 条 · {{ summary.unreadCount }} 条未读</span>
       </article>
     </div>
+
+    <section v-if="subscriptionOverview" class="subscription-governance-panel">
+      <header><div><p class="eyebrow">主题关注</p><h2>订阅覆盖</h2></div><span>{{ subscriptionOverview.subscriberCount }} 名员工正在关注 {{ subscriptionOverview.totalSubscriptionCount }} 个主题关系</span></header>
+      <div class="subscription-governance-summary">
+        <article><Hash :size="17"/><strong>{{ subscriptionOverview.tagSubscriptionCount }}</strong><span>标签订阅</span></article>
+        <article><FolderTree :size="17"/><strong>{{ subscriptionOverview.categorySubscriptionCount }}</strong><span>分类订阅</span></article>
+        <div class="subscription-targets">
+          <span v-for="target in subscriptionOverview.topTargets" :key="`${target.targetType}:${target.targetId}`">
+            {{ target.targetType === "TAG" ? "#" : "分类 · " }}{{ target.targetId }} <strong>{{ target.subscriberCount }}</strong>
+          </span>
+          <small v-if="!subscriptionOverview.topTargets.length">暂时没有订阅数据</small>
+        </div>
+      </div>
+    </section>
 
     <form class="governance-filters" @submit.prevent="load">
       <label><span>接收员工</span><input v-model="filters.recipientUserId" placeholder="例如 u-author" /></label>
