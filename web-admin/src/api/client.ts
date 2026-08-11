@@ -100,6 +100,18 @@ export type CommentGovernanceOverview = {
   articleCount: number;
   authorCount: number;
 };
+export type ContentOperationsOverview = {
+  totalArticleCount: number;
+  publishedArticleCount: number;
+  draftArticleCount: number;
+  pendingReviewArticleCount: number;
+  withdrawnArticleCount: number;
+  categorizedPublishedCount: number;
+  taggedPublishedCount: number;
+  collectionCount: number;
+  collectionArticleCount: number;
+  collectionOwnerCount: number;
+};
 
 const headers = () => {
   const values = new Headers({
@@ -134,6 +146,7 @@ export const api = {
     return request<AuditRecord[]>(`/admin/audits${query}`);
   },
   interactionOverview: (limit = 10) => request<AdminInteractionOverview>(`/admin/stats/overview?limit=${limit}`),
+  contentOperationsOverview: () => request<ContentOperationsOverview>("/admin/content/overview"),
   notificationGovernanceOverview: () => request<NotificationGovernanceOverview>("/admin/notifications/overview"),
   subscriptionGovernanceOverview: () => request<SubscriptionGovernanceOverview>(
     "/admin/notifications/subscriptions/overview",
