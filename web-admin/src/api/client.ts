@@ -1,6 +1,105 @@
 export type ReviewTicket = { id: string; articleId: string; status: string };
 export type SearchTask = { id: string; articleId: string; status: string; retryCount: number };
 export type Tag = { id: string; name: string };
+export type AuditRecord = {
+  id: string;
+  eventId: string;
+  sourceService: string;
+  actorId: string;
+  actorRoles: string[];
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  outcome: string;
+  details?: string;
+  traceId?: string;
+  occurredAt: string;
+  createdAt: string;
+};
+export type AuditFilters = {
+  actorId?: string;
+  action?: string;
+  resourceType?: string;
+  resourceId?: string;
+  from?: string;
+  to?: string;
+};
+export type ArticleInteractionRanking = {
+  articleId: string;
+  viewCount: number;
+  likeCount: number;
+  favoriteCount: number;
+  engagementCount: number;
+};
+export type AdminInteractionOverview = {
+  viewCount: number;
+  likeCount: number;
+  favoriteCount: number;
+  activeArticleCount: number;
+  engagedUserCount: number;
+  topArticles: ArticleInteractionRanking[];
+};
+export type NotificationTypeSummary = { type: string; totalCount: number; unreadCount: number };
+export type NotificationGovernanceOverview = {
+  totalCount: number;
+  unreadCount: number;
+  readCount: number;
+  recipientCount: number;
+  typeSummaries: NotificationTypeSummary[];
+};
+export type AdminNotificationRecord = {
+  id: string;
+  eventId: string;
+  recipientUserId: string;
+  type: string;
+  title: string;
+  content: string;
+  resourceType?: string;
+  resourceId?: string;
+  read: boolean;
+  createdAt: string;
+};
+export type NotificationGovernanceFilters = {
+  recipientUserId?: string;
+  type?: string;
+  state?: "ALL" | "READ" | "UNREAD";
+};
+export type SubscriptionTargetSummary = {
+  targetType: "TAG" | "CATEGORY";
+  targetId: string;
+  subscriberCount: number;
+};
+export type SubscriptionGovernanceOverview = {
+  totalSubscriptionCount: number;
+  subscriberCount: number;
+  tagSubscriptionCount: number;
+  categorySubscriptionCount: number;
+  topTargets: SubscriptionTargetSummary[];
+};
+export type CommentStatus = "ACTIVE" | "HIDDEN" | "DELETED";
+export type AdminCommentRecord = {
+  id: string;
+  articleId: string;
+  parentId?: string;
+  authorId: string;
+  content: string;
+  status: CommentStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+export type CommentGovernanceFilters = {
+  articleId?: string;
+  authorId?: string;
+  status?: "ALL" | CommentStatus;
+};
+export type CommentGovernanceOverview = {
+  totalCount: number;
+  activeCount: number;
+  hiddenCount: number;
+  deletedCount: number;
+  articleCount: number;
+  authorCount: number;
+};
 
 const headers = () => {
   const values = new Headers({
@@ -26,4 +125,42 @@ export const api = {
   searchTasks: () => request<SearchTask[]>("/admin/search/tasks"),
   retryTask: (id: string) => request<void>(`/admin/search/tasks/${id}/retry`, { method: "POST" }),
   tags: () => request<Tag[]>("/admin/tags"),
+  audits: (filters: AuditFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.size ? `?${params.toString()}` : "";
+    return request<AuditRecord[]>(`/admin/audits${query}`);
+  },
+  interactionOverview: (limit = 10) => request<AdminInteractionOverview>(`/admin/stats/overview?limit=${limit}`),
+  notificationGovernanceOverview: () => request<NotificationGovernanceOverview>("/admin/notifications/overview"),
+  subscriptionGovernanceOverview: () => request<SubscriptionGovernanceOverview>(
+    "/admin/notifications/subscriptions/overview",
+  ),
+  adminNotifications: (filters: NotificationGovernanceFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.size ? `?${params.toString()}` : "";
+    return request<AdminNotificationRecord[]>(`/admin/notifications${query}`);
+  },
+  adminComments: (filters: CommentGovernanceFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.size ? `?${params.toString()}` : "";
+    return request<AdminCommentRecord[]>(`/admin/comments${query}`);
+  },
+  commentGovernanceOverview: () => request<CommentGovernanceOverview>("/admin/comments/overview"),
+  hideComment: (commentId: string, reason: string) => request<AdminCommentRecord>(
+    `/admin/comments/${commentId}/hide`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  ),
+  restoreComment: (commentId: string, reason: string) => request<AdminCommentRecord>(
+    `/admin/comments/${commentId}/restore`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  ),
 };

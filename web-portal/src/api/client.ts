@@ -4,13 +4,67 @@ export type Article = {
   id: string;
   authorId: string;
   title: string;
-  status: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED";
+  status: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "WITHDRAWN" | "DELETED";
   visibilityType: string | null;
   visibilityTargetIds: string[];
   tagIds: string[];
+  categoryId: string | null;
   contentJson: string;
   renderedHtml: string;
   plainText: string;
+};
+
+export type ArticleContentVersion = {
+  articleId: string;
+  versionNo: number;
+  title: string;
+  contentJson: string;
+  renderedHtml: string;
+  plainText: string;
+  tagIds: string[];
+  categoryId: string | null;
+  createdBy: string;
+  createdAt: string;
+};
+
+export type ArticleInteraction = {
+  articleId: string;
+  viewCount: number;
+  likeCount: number;
+  favoriteCount: number;
+  liked: boolean;
+  favorited: boolean;
+};
+
+export type PersonalInteractionItem = {
+  articleId: string;
+  interactionType: "FAVORITE" | "VIEW" | string;
+  interactedAt: string;
+};
+
+export type CatalogItem = {
+  id: string;
+  name: string;
+  active: boolean;
+};
+
+export type ContentSubscription = {
+  id: string;
+  userId: string;
+  targetType: "TAG" | "CATEGORY";
+  targetId: string;
+  createdAt: string;
+};
+
+export type UserNotification = {
+  id: string;
+  type: "REVIEW_APPROVED" | "REVIEW_REJECTED" | "COMMENT_REPLY" | string;
+  title: string;
+  content: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  read: boolean;
+  createdAt: string;
 };
 
 export type SearchArticle = {
@@ -65,7 +119,17 @@ async function request<T>(userId: MockUserId, path: string, init: RequestInit = 
     ...init,
     headers: requestHeaders(userId, init.body !== undefined),
   });
-  if (!response.ok) throw new Error(await response.text() || "请求失败");
+  if (!response.ok) {
+    const rawMessage = await response.text();
+    try {
+      const error = JSON.parse(rawMessage) as { message?: string };
+      throw new Error(error.message || "请求失败");
+    } catch (reason) {
+      if (reason instanceof SyntaxError) throw new Error(rawMessage || "请求失败");
+      throw reason;
+    }
+  }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -77,10 +141,23 @@ export function articleContentJson(text: string): string {
 }
 
 export const api = {
-  createDraft(userId: MockUserId, title: string, text: string, tagIds: string[]) {
+  createDraft(userId: MockUserId, title: string, text: string, tagIds: string[], categoryId: string | null = null) {
     return request<Article>(userId, "/articles/drafts", {
       method: "POST",
-      body: JSON.stringify({ title, contentJson: articleContentJson(text), tagIds }),
+      body: JSON.stringify({ title, contentJson: articleContentJson(text), tagIds, categoryId }),
+    });
+  },
+  updateDraft(
+    userId: MockUserId,
+    articleId: string,
+    title: string,
+    text: string,
+    tagIds: string[],
+    categoryId: string | null = null,
+  ) {
+    return request<Article>(userId, `/articles/${articleId}/draft`, {
+      method: "PUT",
+      body: JSON.stringify({ title, contentJson: articleContentJson(text), tagIds, categoryId }),
     });
   },
   publish(userId: MockUserId, articleId: string, visibilityType: string, targetOrgIds: string[], reviewRequired: boolean) {
@@ -91,6 +168,72 @@ export const api = {
   },
   getArticle(userId: MockUserId, articleId: string) {
     return request<Article>(userId, `/articles/${articleId}`);
+  },
+  listMyArticles(userId: MockUserId) {
+    return request<Article[]>(userId, "/articles/mine");
+  },
+  listArticleVersions(userId: MockUserId, articleId: string) {
+    return request<ArticleContentVersion[]>(userId, `/articles/${articleId}/versions`);
+  },
+  withdrawArticle(userId: MockUserId, articleId: string) {
+    return request<Article>(userId, `/articles/${articleId}/withdraw`, { method: "POST" });
+  },
+  deleteArticle(userId: MockUserId, articleId: string) {
+    return request<Article>(userId, `/articles/${articleId}`, { method: "DELETE" });
+  },
+  recordArticleView(userId: MockUserId, articleId: string) {
+    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/views`, { method: "POST" });
+  },
+  setArticleLike(userId: MockUserId, articleId: string, liked: boolean) {
+    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/likes`, {
+      method: liked ? "PUT" : "DELETE",
+    });
+  },
+  setArticleFavorite(userId: MockUserId, articleId: string, favorited: boolean) {
+    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/favorites`, {
+      method: favorited ? "PUT" : "DELETE",
+    });
+  },
+  listFavoriteArticles(userId: MockUserId, limit = 50) {
+    return request<PersonalInteractionItem[]>(userId, `/me/knowledge/favorites?limit=${limit}`);
+  },
+  listRecentViews(userId: MockUserId, limit = 50) {
+    return request<PersonalInteractionItem[]>(userId, `/me/knowledge/recent-views?limit=${limit}`);
+  },
+  listTags(userId: MockUserId) {
+    return request<CatalogItem[]>(userId, "/tags");
+  },
+  listCategories(userId: MockUserId) {
+    return request<CatalogItem[]>(userId, "/categories");
+  },
+  listSubscriptions(userId: MockUserId) {
+    return request<ContentSubscription[]>(userId, "/subscriptions");
+  },
+  subscribe(userId: MockUserId, targetType: ContentSubscription["targetType"], targetId: string) {
+    return request<ContentSubscription>(
+      userId,
+      `/subscriptions/${targetType}/${encodeURIComponent(targetId)}`,
+      { method: "PUT" },
+    );
+  },
+  unsubscribe(userId: MockUserId, targetType: ContentSubscription["targetType"], targetId: string) {
+    return request<void>(
+      userId,
+      `/subscriptions/${targetType}/${encodeURIComponent(targetId)}`,
+      { method: "DELETE" },
+    );
+  },
+  listNotifications(userId: MockUserId) {
+    return request<UserNotification[]>(userId, "/notifications");
+  },
+  notificationUnreadCount(userId: MockUserId) {
+    return request<{ count: number }>(userId, "/notifications/unread-count");
+  },
+  markNotificationRead(userId: MockUserId, notificationId: string) {
+    return request<UserNotification>(userId, `/notifications/${notificationId}/read`, { method: "PUT" });
+  },
+  markAllNotificationsRead(userId: MockUserId) {
+    return request<{ count: number }>(userId, "/notifications/read-all", { method: "PUT" });
   },
   search(userId: MockUserId, query: string) {
     return request<SearchResponse>(userId, `/search/articles?q=${encodeURIComponent(query)}`);
