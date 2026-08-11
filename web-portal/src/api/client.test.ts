@@ -122,4 +122,23 @@ describe("buildMockUserHeaders", () => {
     expect(url).toBe("/api/notifications");
     expect((init.headers as Headers).get("X-Mock-User")).toBe("u-author");
   });
+
+  it("loads a permission-aware home feed", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      latest: [],
+      popular: [],
+      subscribed: [],
+      generatedAt: "2026-08-11T10:00:00Z",
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.homeFeed("u-reader", 6);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/articles/feed?limit=6");
+    expect((init.headers as Headers).get("X-Mock-User")).toBe("u-reader");
+  });
 });

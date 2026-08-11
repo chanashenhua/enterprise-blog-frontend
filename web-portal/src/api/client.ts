@@ -90,6 +90,26 @@ export type SearchArticle = {
   updatedAt: string;
 };
 
+export type HomeFeedItem = {
+  articleId: string;
+  authorId: string;
+  title: string;
+  summary: string;
+  tagIds: string[];
+  categoryId: string | null;
+  publishedAt: string;
+  viewCount: number;
+  likeCount: number;
+  favoriteCount: number;
+};
+
+export type HomeFeed = {
+  latest: HomeFeedItem[];
+  popular: HomeFeedItem[];
+  subscribed: HomeFeedItem[];
+  generatedAt: string;
+};
+
 type SearchResponse = { items: SearchArticle[]; total: number; page: number; size: number };
 
 const identities: Record<MockUserId, Record<string, string>> = {
@@ -267,5 +287,8 @@ export const api = {
   },
   search(userId: MockUserId, query: string) {
     return request<SearchResponse>(userId, `/search/articles?q=${encodeURIComponent(query)}`);
+  },
+  homeFeed(userId: MockUserId, limit = 6) {
+    return request<HomeFeed>(userId, `/articles/feed?limit=${limit}`);
   },
 };
