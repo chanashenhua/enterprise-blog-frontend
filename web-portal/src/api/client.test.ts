@@ -75,6 +75,40 @@ describe("buildMockUserHeaders", () => {
     );
   });
 
+  it("uses the article comment endpoints for discussion actions", async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}", {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.createArticleComment("u-reader", "article-1", "根评论");
+    await api.createArticleComment("u-author", "article-1", "回复内容", "comment-1");
+    await api.updateArticleComment("u-author", "article-1", "comment-1", "修改后内容");
+    await api.deleteArticleComment("u-admin", "article-1", "comment-1");
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/articles/article-1/comments",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ content: "根评论", parentId: null }) }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/articles/article-1/comments",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ content: "回复内容", parentId: "comment-1" }) }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/articles/article-1/comments/comment-1",
+      expect.objectContaining({ method: "PUT", body: JSON.stringify({ content: "修改后内容" }) }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      "/api/articles/article-1/comments/comment-1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
   it("loads the current users notification inbox", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("[]", {
       status: 200,

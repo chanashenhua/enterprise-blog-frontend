@@ -36,6 +36,18 @@ export type ArticleInteraction = {
   favorited: boolean;
 };
 
+export type ArticleComment = {
+  id: string;
+  articleId: string;
+  parentId: string | null;
+  authorId: string;
+  content: string | null;
+  deleted: boolean;
+  hidden: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type PersonalInteractionItem = {
   articleId: string;
   interactionType: "FAVORITE" | "VIEW" | string;
@@ -193,6 +205,24 @@ export const api = {
     return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/favorites`, {
       method: favorited ? "PUT" : "DELETE",
     });
+  },
+  listArticleComments(userId: MockUserId, articleId: string) {
+    return request<ArticleComment[]>(userId, `/articles/${articleId}/comments`);
+  },
+  createArticleComment(userId: MockUserId, articleId: string, content: string, parentId: string | null = null) {
+    return request<ArticleComment>(userId, `/articles/${articleId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ content, parentId }),
+    });
+  },
+  updateArticleComment(userId: MockUserId, articleId: string, commentId: string, content: string) {
+    return request<ArticleComment>(userId, `/articles/${articleId}/comments/${commentId}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    });
+  },
+  deleteArticleComment(userId: MockUserId, articleId: string, commentId: string) {
+    return request<void>(userId, `/articles/${articleId}/comments/${commentId}`, { method: "DELETE" });
   },
   listFavoriteArticles(userId: MockUserId, limit = 50) {
     return request<PersonalInteractionItem[]>(userId, `/me/knowledge/favorites?limit=${limit}`);
