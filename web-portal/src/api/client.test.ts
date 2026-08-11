@@ -160,4 +160,28 @@ describe("buildMockUserHeaders", () => {
     expect(url).toBe("/api/articles/discovery?type=TAG&targetId=java&limit=30");
     expect((init.headers as Headers).get("X-Mock-User")).toBe("u-reader");
   });
+
+  it("creates an ordered knowledge collection", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.createKnowledgeCollection("u-author", {
+      title: "Spring Cloud 实践路径",
+      description: "推荐阅读顺序",
+      articleIds: ["article-2", "article-1"],
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/collections");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({
+      title: "Spring Cloud 实践路径",
+      description: "推荐阅读顺序",
+      articleIds: ["article-2", "article-1"],
+    });
+    expect((init.headers as Headers).get("X-Mock-User")).toBe("u-author");
+  });
 });

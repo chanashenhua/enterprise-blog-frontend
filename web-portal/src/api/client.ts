@@ -117,6 +117,34 @@ export type ArticleDiscovery = {
   generatedAt: string;
 };
 
+export type KnowledgeCollectionSummary = {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string;
+  articleCount: number;
+  createdAt: string;
+  updatedAt: string;
+  editable: boolean;
+};
+
+export type KnowledgeCollectionDetail = {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string;
+  articles: HomeFeedItem[];
+  createdAt: string;
+  updatedAt: string;
+  editable: boolean;
+};
+
+export type SaveKnowledgeCollection = {
+  title: string;
+  description: string;
+  articleIds: string[];
+};
+
 type SearchResponse = { items: SearchArticle[]; total: number; page: number; size: number };
 
 const identities: Record<MockUserId, Record<string, string>> = {
@@ -301,5 +329,30 @@ export const api = {
   discoverArticles(userId: MockUserId, targetType: ArticleDiscovery["targetType"], targetId: string, limit = 30) {
     const query = new URLSearchParams({ type: targetType, targetId, limit: String(limit) });
     return request<ArticleDiscovery>(userId, `/articles/discovery?${query.toString()}`);
+  },
+  listKnowledgeCollections(userId: MockUserId, mine = false, limit = 20) {
+    const query = new URLSearchParams({ mine: String(mine), limit: String(limit) });
+    return request<KnowledgeCollectionSummary[]>(userId, `/collections?${query.toString()}`);
+  },
+  getKnowledgeCollection(userId: MockUserId, collectionId: string) {
+    return request<KnowledgeCollectionDetail>(userId, `/collections/${encodeURIComponent(collectionId)}`);
+  },
+  listCollectionCandidates(userId: MockUserId, limit = 50) {
+    return request<HomeFeedItem[]>(userId, `/collections/candidates?limit=${limit}`);
+  },
+  createKnowledgeCollection(userId: MockUserId, collection: SaveKnowledgeCollection) {
+    return request<KnowledgeCollectionDetail>(userId, "/collections", {
+      method: "POST",
+      body: JSON.stringify(collection),
+    });
+  },
+  updateKnowledgeCollection(userId: MockUserId, collectionId: string, collection: SaveKnowledgeCollection) {
+    return request<KnowledgeCollectionDetail>(userId, `/collections/${encodeURIComponent(collectionId)}`, {
+      method: "PUT",
+      body: JSON.stringify(collection),
+    });
+  },
+  deleteKnowledgeCollection(userId: MockUserId, collectionId: string) {
+    return request<void>(userId, `/collections/${encodeURIComponent(collectionId)}`, { method: "DELETE" });
   },
 };

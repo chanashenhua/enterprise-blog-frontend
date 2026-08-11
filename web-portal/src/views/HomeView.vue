@@ -11,6 +11,7 @@ import {
   Flame,
   GitBranch,
   Heart,
+  LibraryBig,
   Radio,
   RefreshCw,
   Rss,
@@ -18,13 +19,14 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-vue-next";
-import { api, type HomeFeed, type HomeFeedItem } from "@/api/client";
+import { api, type HomeFeed, type HomeFeedItem, type KnowledgeCollectionSummary } from "@/api/client";
 import { useUserContext } from "@/composables/userContext";
 
 type FeedSection = "latest" | "popular" | "subscribed";
 
 const { userId, userLabel } = useUserContext();
 const feed = ref<HomeFeed>();
+const recommendedCollections = ref<KnowledgeCollectionSummary[]>([]);
 const loading = ref(true);
 const error = ref("");
 const activeSection = ref<FeedSection>("latest");
@@ -46,9 +48,16 @@ async function loadFeed() {
   loading.value = true;
   error.value = "";
   try {
-    feed.value = await api.homeFeed(userId.value, 6);
+    const [feedResult, collectionsResult] = await Promise.allSettled([
+      api.homeFeed(userId.value, 6),
+      api.listKnowledgeCollections(userId.value, false, 3),
+    ]);
+    if (feedResult.status === "rejected") throw feedResult.reason;
+    feed.value = feedResult.value;
+    recommendedCollections.value = collectionsResult.status === "fulfilled" ? collectionsResult.value : [];
   } catch (reason) {
     feed.value = undefined;
+    recommendedCollections.value = [];
     error.value = reason instanceof Error ? reason.message : "知识首页加载失败";
   } finally {
     loading.value = false;
@@ -182,6 +191,27 @@ watch(userId, loadFeed);
         <p v-else>发布第一篇团队知识，让经验开始流动。</p>
         <RouterLink v-if="activeSection === 'subscribed'" class="text-action" to="/subscriptions">管理我的订阅 <ArrowUpRight :size="14" /></RouterLink>
         <RouterLink v-else class="text-action" to="/articles/new">开始写作 <ArrowUpRight :size="14" /></RouterLink>
+      </div>
+    </section>
+
+    <section v-if="recommendedCollections.length" class="home-collections" aria-labelledby="home-collections-title">
+      <header>
+        <div>
+          <p class="eyebrow"><LibraryBig :size="14" /> 推荐专题</p>
+          <h2 id="home-collections-title">沿着整理好的路径，连续读懂一个问题</h2>
+        </div>
+        <RouterLink class="text-action" to="/collections">查看全部专题 <ArrowUpRight :size="14" /></RouterLink>
+      </header>
+      <div>
+        <RouterLink
+          v-for="(collection, index) in recommendedCollections"
+          :key="collection.id"
+          :to="`/collections/${collection.id}`"
+        >
+          <span>{{ String(index + 1).padStart(2, "0") }}</span>
+          <p><strong>{{ collection.title }}</strong><small>{{ collection.articleCount }} 篇文章 · {{ collection.ownerId }}</small></p>
+          <ArrowUpRight :size="17" />
+        </RouterLink>
       </div>
     </section>
 

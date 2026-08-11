@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
-import { ArrowUpRight, Bell, BookHeart, Clock3, Eye, Library, RefreshCw, Rss, Tags, X } from "lucide-vue-next";
+import { ArrowUpRight, Bell, BookHeart, Clock3, Eye, Library, LibraryBig, RefreshCw, Rss, Tags, X } from "lucide-vue-next";
 import { api, type Article, type PersonalInteractionItem } from "@/api/client";
 import { formatInteractionTime, visibleKnowledgeEntries } from "@/libraryPresentation";
 import { useUserContext } from "@/composables/userContext";
@@ -97,6 +97,7 @@ watch(userId, loadKnowledge);
     <nav class="library-journey" aria-label="个人知识工作台入口">
       <div><strong>继续整理你的知识流</strong><span>收藏沉淀已有内容，订阅跟进新内容，通知承接最新动态。</span></div>
       <RouterLink to="/subscriptions"><Rss :size="16"/><span><strong>管理订阅</strong><small>选择分类与标签</small></span><ArrowUpRight :size="15"/></RouterLink>
+      <RouterLink to="/collections"><LibraryBig :size="16"/><span><strong>专题路径</strong><small>整理连续阅读</small></span><ArrowUpRight :size="15"/></RouterLink>
       <RouterLink to="/notifications"><Bell :size="16"/><span><strong>查看通知</strong><small>接收订阅更新</small></span><ArrowUpRight :size="15"/></RouterLink>
     </nav>
 

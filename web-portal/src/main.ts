@@ -5,5 +5,6 @@ import "./styles.css";
 import "./library.css";
 import "./subscriptions.css";
 import "./explore.css";
+import "./collections.css";
 
 createApp(App).use(router).mount("#app");
