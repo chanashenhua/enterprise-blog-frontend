@@ -1341,6 +1341,21 @@ h2 {
   background: rgba(24, 51, 47, 0.045);
 }
 
+.article-meta a {
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.article-meta a:hover {
+  color: var(--emerald);
+}
+
+.article-meta-links a + a::before {
+  content: "·";
+  margin-right: 6px;
+  color: #a0aaa7;
+}
+
 .article-detail-actions {
   gap: 8px;
   margin-top: 24px;

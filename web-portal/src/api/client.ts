@@ -110,6 +110,13 @@ export type HomeFeed = {
   generatedAt: string;
 };
 
+export type ArticleDiscovery = {
+  targetType: "CATEGORY" | "TAG";
+  targetId: string;
+  items: HomeFeedItem[];
+  generatedAt: string;
+};
+
 type SearchResponse = { items: SearchArticle[]; total: number; page: number; size: number };
 
 const identities: Record<MockUserId, Record<string, string>> = {
@@ -290,5 +297,9 @@ export const api = {
   },
   homeFeed(userId: MockUserId, limit = 6) {
     return request<HomeFeed>(userId, `/articles/feed?limit=${limit}`);
+  },
+  discoverArticles(userId: MockUserId, targetType: ArticleDiscovery["targetType"], targetId: string, limit = 30) {
+    const query = new URLSearchParams({ type: targetType, targetId, limit: String(limit) });
+    return request<ArticleDiscovery>(userId, `/articles/discovery?${query.toString()}`);
   },
 };

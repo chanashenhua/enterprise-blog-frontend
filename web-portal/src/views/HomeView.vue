@@ -81,7 +81,7 @@ watch(userId, loadFeed);
           <RouterLink class="button primary hero-command" to="/articles/new">
             <FilePenLine :size="17" /> 开始写作 <ArrowUpRight :size="16" />
           </RouterLink>
-          <RouterLink class="button secondary hero-command" to="/search"><Search :size="17" /> 探索知识</RouterLink>
+          <RouterLink class="button secondary hero-command" to="/explore"><Search :size="17" /> 探索知识</RouterLink>
         </div>
         <div class="hero-proof" aria-label="平台能力">
           <div><ShieldCheck :size="18" /><span><strong>权限感知</strong><small>只展示当前身份可读内容</small></span></div>

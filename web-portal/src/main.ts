@@ -4,5 +4,6 @@ import router from "./router";
 import "./styles.css";
 import "./library.css";
 import "./subscriptions.css";
+import "./explore.css";
 
 createApp(App).use(router).mount("#app");

@@ -141,4 +141,23 @@ describe("buildMockUserHeaders", () => {
     expect(url).toBe("/api/articles/feed?limit=6");
     expect((init.headers as Headers).get("X-Mock-User")).toBe("u-reader");
   });
+
+  it("discovers permission-aware articles by taxonomy target", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      targetType: "TAG",
+      targetId: "java",
+      items: [],
+      generatedAt: "2026-08-11T10:00:00Z",
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.discoverArticles("u-reader", "TAG", "java", 30);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/articles/discovery?type=TAG&targetId=java&limit=30");
+    expect((init.headers as Headers).get("X-Mock-User")).toBe("u-reader");
+  });
 });

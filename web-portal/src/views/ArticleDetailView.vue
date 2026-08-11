@@ -304,8 +304,25 @@ watch([userId, () => props.id], loadArticle);
           <h1>{{ article.title }}</h1>
           <div class="article-meta">
             <span><UserRound :size="15" /> {{ article.authorId }}</span>
-            <span><Tag :size="15" /> {{ article.tagIds.join(" · ") || "无标签" }}</span>
-            <span><FolderOpen :size="15" /> {{ article.categoryId || "未分类" }}</span>
+            <span class="article-meta-links">
+              <Tag :size="15" />
+              <template v-if="article.tagIds.length">
+                <RouterLink
+                  v-for="tagId in article.tagIds"
+                  :key="tagId"
+                  :to="{ path: '/explore', query: { type: 'TAG', id: tagId } }"
+                >{{ tagId }}</RouterLink>
+              </template>
+              <template v-else>无标签</template>
+            </span>
+            <span>
+              <FolderOpen :size="15" />
+              <RouterLink
+                v-if="article.categoryId"
+                :to="{ path: '/explore', query: { type: 'CATEGORY', id: article.categoryId } }"
+              >{{ article.categoryId }}</RouterLink>
+              <template v-else>未分类</template>
+            </span>
             <span><Clock3 :size="15" /> 企业知识库</span>
           </div>
           <div v-if="article.status === 'PUBLISHED'" class="article-interactions">
