@@ -28,9 +28,9 @@ async function load() {
   notice.value = "";
   try {
     const [tagItems, categoryItems, subscriptionItems] = await Promise.all([
-      api.listTags(userId.value),
-      api.listCategories(userId.value),
-      api.listSubscriptions(userId.value),
+      api.listTags(),
+      api.listCategories(),
+      api.listSubscriptions(),
     ]);
     tags.value = tagItems;
     categories.value = categoryItems;
@@ -49,13 +49,13 @@ async function toggle(type: ContentSubscription["targetType"], item: CatalogItem
   notice.value = "";
   try {
     if (isSubscribed(type, item.id)) {
-      await api.unsubscribe(userId.value, type, item.id);
+      await api.unsubscribe(type, item.id);
       subscriptions.value = subscriptions.value.filter(
         (subscription) => subscriptionKey(subscription.targetType, subscription.targetId) !== key,
       );
       notice.value = `已取消订阅“${item.name}”。`;
     } else {
-      const created = await api.subscribe(userId.value, type, item.id);
+      const created = await api.subscribe(type, item.id);
       subscriptions.value = [
         ...subscriptions.value.filter(
           (subscription) => subscriptionKey(subscription.targetType, subscription.targetId) !== key,

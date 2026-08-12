@@ -78,7 +78,7 @@ async function loadComments(articleId: string) {
   commentsLoading.value = true;
   commentError.value = "";
   try {
-    comments.value = await api.listArticleComments(userId.value, articleId);
+    comments.value = await api.listArticleComments(articleId);
   } catch (reason) {
     comments.value = [];
     commentError.value = reason instanceof Error ? reason.message : "评论加载失败";
@@ -100,11 +100,11 @@ async function loadArticle() {
   replyingTo.value = "";
   editingCommentId.value = "";
   try {
-    const loaded = await api.getArticle(userId.value, props.id);
+    const loaded = await api.getArticle(props.id);
     article.value = loaded;
     if (loaded.status === "PUBLISHED") {
       await Promise.all([
-        api.recordArticleView(userId.value, loaded.id)
+        api.recordArticleView(loaded.id)
           .then((result) => { interaction.value = result; })
           .catch((reason: unknown) => {
             interactionMessage.value = reason instanceof Error ? reason.message : "互动数据暂时不可用";
@@ -128,7 +128,7 @@ async function createComment() {
   commentError.value = "";
   commentMessage.value = "";
   try {
-    const created = await api.createArticleComment(userId.value, article.value.id, content);
+    const created = await api.createArticleComment(article.value.id, content);
     comments.value = [...comments.value, created];
     newCommentContent.value = "";
     commentMessage.value = "评论已发布";
@@ -157,7 +157,7 @@ async function createReply(parentId: string) {
   commentError.value = "";
   commentMessage.value = "";
   try {
-    const created = await api.createArticleComment(userId.value, article.value.id, content, parentId);
+    const created = await api.createArticleComment(article.value.id, content, parentId);
     comments.value = [...comments.value, created];
     replyContent.value = "";
     replyingTo.value = "";
@@ -192,7 +192,7 @@ async function saveComment(comment: ArticleComment) {
   commentError.value = "";
   commentMessage.value = "";
   try {
-    const updated = await api.updateArticleComment(userId.value, article.value.id, comment.id, content);
+    const updated = await api.updateArticleComment(article.value.id, comment.id, content);
     comments.value = comments.value.map((item) => item.id === updated.id ? updated : item);
     cancelEditing();
     commentMessage.value = "评论已更新";
@@ -209,7 +209,7 @@ async function deleteComment(comment: ArticleComment) {
   commentError.value = "";
   commentMessage.value = "";
   try {
-    await api.deleteArticleComment(userId.value, article.value.id, comment.id);
+    await api.deleteArticleComment(article.value.id, comment.id);
     await loadComments(article.value.id);
     commentMessage.value = "评论已删除";
     if (editingCommentId.value === comment.id) cancelEditing();
@@ -225,7 +225,7 @@ async function toggleLike() {
   interactionBusy.value = true;
   interactionMessage.value = "";
   try {
-    interaction.value = await api.setArticleLike(userId.value, article.value.id, !interaction.value.liked);
+    interaction.value = await api.setArticleLike(article.value.id, !interaction.value.liked);
   } catch (reason) {
     interactionMessage.value = reason instanceof Error ? reason.message : "点赞操作失败";
   } finally {
@@ -238,7 +238,7 @@ async function toggleFavorite() {
   interactionBusy.value = true;
   interactionMessage.value = "";
   try {
-    interaction.value = await api.setArticleFavorite(userId.value, article.value.id, !interaction.value.favorited);
+    interaction.value = await api.setArticleFavorite(article.value.id, !interaction.value.favorited);
   } catch (reason) {
     interactionMessage.value = reason instanceof Error ? reason.message : "收藏操作失败";
   } finally {
@@ -254,7 +254,7 @@ async function toggleVersions() {
   busy.value = true;
   message.value = "";
   try {
-    versions.value = await api.listArticleVersions(userId.value, props.id);
+    versions.value = await api.listArticleVersions(props.id);
     versionsVisible.value = true;
   } catch (reason) {
     message.value = reason instanceof Error ? reason.message : "历史版本加载失败";
@@ -268,7 +268,7 @@ async function withdraw() {
   busy.value = true;
   message.value = "";
   try {
-    article.value = await api.withdrawArticle(userId.value, article.value.id);
+    article.value = await api.withdrawArticle(article.value.id);
     message.value = "文章已撤回，现在可以重新编辑";
   } catch (reason) {
     message.value = reason instanceof Error ? reason.message : "文章撤回失败";
@@ -281,7 +281,7 @@ async function remove() {
   if (!article.value || !window.confirm(`确定删除《${article.value.title}》吗？该操作会保留审计记录。`)) return;
   busy.value = true;
   try {
-    await api.deleteArticle(userId.value, article.value.id);
+    await api.deleteArticle(article.value.id);
     await router.push("/articles");
   } catch (reason) {
     message.value = reason instanceof Error ? reason.message : "文章删除失败";

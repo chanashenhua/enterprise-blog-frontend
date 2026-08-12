@@ -49,8 +49,8 @@ async function loadFeed() {
   error.value = "";
   try {
     const [feedResult, collectionsResult] = await Promise.allSettled([
-      api.homeFeed(userId.value, 6),
-      api.listKnowledgeCollections(userId.value, false, 3),
+      api.homeFeed(6),
+      api.listKnowledgeCollections(false, 3),
     ]);
     if (feedResult.status === "rejected") throw feedResult.reason;
     feed.value = feedResult.value;

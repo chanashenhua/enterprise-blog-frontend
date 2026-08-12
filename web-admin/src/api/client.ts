@@ -1,3 +1,5 @@
+import { AuthenticationRequiredError, authorizationHeaders, handleUnauthorized } from "@/auth/auth";
+
 export type ReviewTicket = { id: string; articleId: string; status: string };
 export type SearchTask = { id: string; articleId: string; status: string; retryCount: number };
 export type Tag = { id: string; name: string };
@@ -113,19 +115,19 @@ export type ContentOperationsOverview = {
   collectionOwnerCount: number;
 };
 
-const headers = () => {
-  const values = new Headers({
-    "X-Mock-User": "u-admin", "X-Mock-Roles": "ADMIN,REVIEWER,AUTHOR,READER",
-    "X-Mock-Departments": "d-platform", "X-Mock-Teams": "t-search",
-  });
-  if (import.meta.env.VITE_MOCK_OIDC_TOKEN) values.set("X-Mock-Token", import.meta.env.VITE_MOCK_OIDC_TOKEN);
+const headers = async () => {
+  const values = new Headers(await authorizationHeaders());
   return values;
 };
 
 async function request<T>(path: string, init: RequestInit = {}) {
-  const requestHeaders = headers();
+  const requestHeaders = await headers();
   if (init.body) requestHeaders.set("Content-Type", "application/json");
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? "/api"}${path}`, { ...init, headers: requestHeaders });
+  if (response.status === 401) {
+    await handleUnauthorized();
+    throw new AuthenticationRequiredError();
+  }
   if (!response.ok) throw new Error(await response.text() || "请求失败");
   return response.status === 204 ? undefined as T : response.json() as Promise<T>;
 }

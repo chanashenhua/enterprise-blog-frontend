@@ -1,12 +1,12 @@
 import { ref } from "vue";
-import { api, type MockUserId } from "@/api/client";
+import { api } from "@/api/client";
 
 const unreadCount = ref(0);
 
 export function useNotificationState() {
-  async function refreshUnreadCount(userId: MockUserId) {
+  async function refreshUnreadCount() {
     try {
-      unreadCount.value = (await api.notificationUnreadCount(userId)).count;
+      unreadCount.value = (await api.notificationUnreadCount()).count;
     } catch {
       unreadCount.value = 0;
     }

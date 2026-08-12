@@ -17,7 +17,7 @@ async function loadArticles() {
   loading.value = true;
   error.value = "";
   try {
-    articles.value = await api.listMyArticles(userId.value);
+    articles.value = await api.listMyArticles();
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : "文章列表加载失败";
   } finally {
@@ -29,7 +29,7 @@ async function withdraw(article: Article) {
   actionArticleId.value = article.id;
   message.value = "";
   try {
-    const updated = await api.withdrawArticle(userId.value, article.id);
+    const updated = await api.withdrawArticle(article.id);
     articles.value = articles.value.map((item) => item.id === updated.id ? updated : item);
     message.value = `《${article.title}》已撤回`;
   } catch (reason) {
@@ -44,7 +44,7 @@ async function remove(article: Article) {
   actionArticleId.value = article.id;
   message.value = "";
   try {
-    await api.deleteArticle(userId.value, article.id);
+    await api.deleteArticle(article.id);
     articles.value = articles.value.filter((item) => item.id !== article.id);
     message.value = `《${article.title}》已删除`;
   } catch (reason) {

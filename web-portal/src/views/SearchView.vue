@@ -13,7 +13,7 @@ const message = ref("");
 async function runSearch() {
   message.value = "";
   try {
-    const response = await api.search(userId.value, query.value.trim());
+    const response = await api.search(query.value.trim());
     results.value = response.items;
     total.value = response.total;
   } catch (error) {

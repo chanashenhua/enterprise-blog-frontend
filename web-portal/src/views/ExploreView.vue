@@ -72,7 +72,7 @@ async function loadArticles() {
   loadingArticles.value = true;
   error.value = "";
   try {
-    const response = await api.discoverArticles(userId.value, selectedType.value, selectedId.value);
+    const response = await api.discoverArticles(selectedType.value, selectedId.value);
     items.value = response.items;
   } catch (reason) {
     items.value = [];
@@ -99,9 +99,9 @@ async function load() {
   notice.value = "";
   try {
     const [categoryItems, tagItems, subscriptionItems] = await Promise.all([
-      api.listCategories(userId.value),
-      api.listTags(userId.value),
-      api.listSubscriptions(userId.value),
+      api.listCategories(),
+      api.listTags(),
+      api.listSubscriptions(),
     ]);
     categories.value = categoryItems;
     tags.value = tagItems;
@@ -133,13 +133,13 @@ async function toggleSubscription() {
   const key = subscriptionKey(selectedType.value, selectedId.value);
   try {
     if (selectedSubscribed.value) {
-      await api.unsubscribe(userId.value, selectedType.value, selectedId.value);
+      await api.unsubscribe(selectedType.value, selectedId.value);
       subscriptions.value = subscriptions.value.filter(
         (item) => subscriptionKey(item.targetType, item.targetId) !== key,
       );
       notice.value = `已取消订阅“${selectedName.value}”。`;
     } else {
-      const created = await api.subscribe(userId.value, selectedType.value, selectedId.value);
+      const created = await api.subscribe(selectedType.value, selectedId.value);
       subscriptions.value = [
         ...subscriptions.value.filter((item) => subscriptionKey(item.targetType, item.targetId) !== key),
         created,

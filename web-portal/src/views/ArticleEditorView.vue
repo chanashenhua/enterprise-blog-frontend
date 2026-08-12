@@ -33,7 +33,7 @@ async function loadArticle() {
   if (!props.id) return;
   loading.value = true;
   try {
-    const article = await api.getArticle(userId.value, props.id);
+    const article = await api.getArticle(props.id);
     currentArticleId.value = article.id;
     title.value = article.title;
     body.value = article.plainText;
@@ -52,7 +52,6 @@ function persistDraft(): Promise<Article> {
   const normalizedCategoryId = categoryId.value.trim() || null;
   if (currentArticleId.value) {
     return api.updateDraft(
-      userId.value,
       currentArticleId.value,
       title.value.trim(),
       body.value.trim(),
@@ -61,7 +60,6 @@ function persistDraft(): Promise<Article> {
     );
   }
   return api.createDraft(
-    userId.value,
     title.value.trim(),
     body.value.trim(),
     tagIds(),
@@ -92,7 +90,7 @@ async function publish() {
   try {
     const draft = await persistDraft();
     currentArticleId.value = draft.id;
-    const article = await api.publish(userId.value, draft.id, visibility.value, targetOrgIds(), visibility.value !== "COMPANY");
+    const article = await api.publish(draft.id, visibility.value, targetOrgIds(), visibility.value !== "COMPANY");
     await router.push(`/articles/${article.id}`);
   } catch (error) {
     message.value = error instanceof Error ? error.message : "发布失败";

@@ -1,4 +1,5 @@
-import type { ArticleComment, MockUserId } from "@/api/client";
+import type { ArticleComment } from "@/api/client";
+import type { DemoUserId } from "@/auth/auth";
 
 export type CommentThread = {
   root: ArticleComment;
@@ -23,7 +24,7 @@ export function visibleCommentCount(comments: ArticleComment[]): number {
   return comments.filter((comment) => !comment.deleted && !comment.hidden).length;
 }
 
-export function canManageComment(comment: ArticleComment, userId: MockUserId): boolean {
+export function canManageComment(comment: ArticleComment, userId: DemoUserId): boolean {
   return !comment.deleted && !comment.hidden && (comment.authorId === userId || userId === "u-admin");
 }
 

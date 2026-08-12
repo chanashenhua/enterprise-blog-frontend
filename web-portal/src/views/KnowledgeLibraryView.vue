@@ -28,14 +28,14 @@ async function loadKnowledge() {
   notice.value = "";
   try {
     const [favoriteItems, recentItems] = await Promise.all([
-      api.listFavoriteArticles(userId.value),
-      api.listRecentViews(userId.value),
+      api.listFavoriteArticles(),
+      api.listRecentViews(),
     ]);
     favorites.value = favoriteItems;
     recentViews.value = recentItems;
 
     const articleIds = [...new Set([...favoriteItems, ...recentItems].map((item) => item.articleId))];
-    const results = await Promise.allSettled(articleIds.map((articleId) => api.getArticle(userId.value, articleId)));
+    const results = await Promise.allSettled(articleIds.map((articleId) => api.getArticle(articleId)));
     const visibleArticles = new Map<string, Article>();
     results.forEach((result) => {
       if (result.status === "fulfilled") visibleArticles.set(result.value.id, result.value);
@@ -55,7 +55,7 @@ async function removeFavorite(articleId: string) {
   removingArticleId.value = articleId;
   error.value = "";
   try {
-    await api.setArticleFavorite(userId.value, articleId, false);
+    await api.setArticleFavorite(articleId, false);
     favorites.value = favorites.value.filter((item) => item.articleId !== articleId);
     notice.value = "已取消收藏。";
   } catch (reason) {

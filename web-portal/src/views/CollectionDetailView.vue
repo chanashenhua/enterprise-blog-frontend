@@ -25,7 +25,7 @@ async function loadCollection() {
   loading.value = true;
   error.value = "";
   try {
-    collection.value = await api.getKnowledgeCollection(userId.value, props.id);
+    collection.value = await api.getKnowledgeCollection(props.id);
   } catch (reason) {
     collection.value = undefined;
     error.value = reason instanceof Error ? reason.message : "专题详情加载失败";

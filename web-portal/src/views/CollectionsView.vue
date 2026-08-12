@@ -23,7 +23,7 @@ async function loadCollections() {
   loading.value = true;
   error.value = "";
   try {
-    collections.value = await api.listKnowledgeCollections(userId.value, mineOnly.value, 30);
+    collections.value = await api.listKnowledgeCollections(mineOnly.value, 30);
   } catch (reason) {
     collections.value = [];
     error.value = reason instanceof Error ? reason.message : "专题列表加载失败";

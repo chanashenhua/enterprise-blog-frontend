@@ -11,5 +11,12 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
+    {
+      name: "mobile-auth",
+      testMatch: /authentication\.spec\.ts/,
+      use: { ...devices["iPhone 13"], browserName: "chromium", channel: "chrome" },
+    },
+  ],
 });

@@ -51,10 +51,10 @@ async function loadEditor() {
   loading.value = true;
   error.value = "";
   try {
-    const candidateItems = await api.listCollectionCandidates(userId.value, 50);
+    const candidateItems = await api.listCollectionCandidates(50);
     candidates.value = candidateItems;
     if (props.id) {
-      const collection = await api.getKnowledgeCollection(userId.value, props.id);
+      const collection = await api.getKnowledgeCollection(props.id);
       if (!collection.editable) throw new Error("当前身份只能阅读这个专题，不能修改。\n");
       title.value = collection.title;
       description.value = collection.description;
@@ -106,8 +106,8 @@ async function saveCollection() {
       articleIds: selectedIds.value,
     };
     const saved = props.id
-      ? await api.updateKnowledgeCollection(userId.value, props.id, payload)
-      : await api.createKnowledgeCollection(userId.value, payload);
+      ? await api.updateKnowledgeCollection(props.id, payload)
+      : await api.createKnowledgeCollection(payload);
     await router.push(`/collections/${saved.id}`);
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : "专题保存失败";
@@ -121,7 +121,7 @@ async function deleteCollection() {
   deleting.value = true;
   error.value = "";
   try {
-    await api.deleteKnowledgeCollection(userId.value, props.id);
+    await api.deleteKnowledgeCollection(props.id);
     await router.push("/collections");
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : "专题删除失败";

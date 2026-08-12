@@ -1,4 +1,4 @@
-export type MockUserId = "u-admin" | "u-author" | "u-reader";
+import { AuthenticationRequiredError, authorizationHeaders, handleUnauthorized } from "@/auth/auth";
 
 export type Article = {
   id: string;
@@ -147,45 +147,21 @@ export type SaveKnowledgeCollection = {
 
 type SearchResponse = { items: SearchArticle[]; total: number; page: number; size: number };
 
-const identities: Record<MockUserId, Record<string, string>> = {
-  "u-admin": {
-    "X-Mock-User": "u-admin",
-    "X-Mock-Roles": "ADMIN,REVIEWER,AUTHOR,READER",
-    "X-Mock-Departments": "d-platform",
-    "X-Mock-Teams": "t-search",
-  },
-  "u-author": {
-    "X-Mock-User": "u-author",
-    "X-Mock-Roles": "AUTHOR,READER",
-    "X-Mock-Departments": "d-platform",
-    "X-Mock-Teams": "t-search",
-  },
-  "u-reader": {
-    "X-Mock-User": "u-reader",
-    "X-Mock-Roles": "READER",
-    "X-Mock-Departments": "d-pay",
-    "X-Mock-Teams": "t-pay",
-  },
-};
-
-export function buildMockUserHeaders(userId: MockUserId): Record<string, string> {
-  return { ...identities[userId] };
-}
-
-function requestHeaders(userId: MockUserId, hasBody = false): Headers {
-  const headers = new Headers(buildMockUserHeaders(userId));
+async function requestHeaders(hasBody = false): Promise<Headers> {
+  const headers = new Headers(await authorizationHeaders());
   if (hasBody) headers.set("Content-Type", "application/json");
-  if (import.meta.env.VITE_MOCK_OIDC_TOKEN) {
-    headers.set("X-Mock-Token", import.meta.env.VITE_MOCK_OIDC_TOKEN);
-  }
   return headers;
 }
 
-async function request<T>(userId: MockUserId, path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? "/api"}${path}`, {
     ...init,
-    headers: requestHeaders(userId, init.body !== undefined),
+    headers: await requestHeaders(init.body !== undefined),
   });
+  if (response.status === 401) {
+    await handleUnauthorized();
+    throw new AuthenticationRequiredError();
+  }
   if (!response.ok) {
     const rawMessage = await response.text();
     try {
@@ -208,151 +184,148 @@ export function articleContentJson(text: string): string {
 }
 
 export const api = {
-  createDraft(userId: MockUserId, title: string, text: string, tagIds: string[], categoryId: string | null = null) {
-    return request<Article>(userId, "/articles/drafts", {
+  createDraft(title: string, text: string, tagIds: string[], categoryId: string | null = null) {
+    return request<Article>("/articles/drafts", {
       method: "POST",
       body: JSON.stringify({ title, contentJson: articleContentJson(text), tagIds, categoryId }),
     });
   },
   updateDraft(
-    userId: MockUserId,
     articleId: string,
     title: string,
     text: string,
     tagIds: string[],
     categoryId: string | null = null,
   ) {
-    return request<Article>(userId, `/articles/${articleId}/draft`, {
+    return request<Article>(`/articles/${articleId}/draft`, {
       method: "PUT",
       body: JSON.stringify({ title, contentJson: articleContentJson(text), tagIds, categoryId }),
     });
   },
-  publish(userId: MockUserId, articleId: string, visibilityType: string, targetOrgIds: string[], reviewRequired: boolean) {
-    return request<Article>(userId, `/articles/${articleId}/submit-publish`, {
+  publish(articleId: string, visibilityType: string, targetOrgIds: string[], reviewRequired: boolean) {
+    return request<Article>(`/articles/${articleId}/submit-publish`, {
       method: "POST",
       body: JSON.stringify({ visibilityType, targetOrgIds, reviewRequired }),
     });
   },
-  getArticle(userId: MockUserId, articleId: string) {
-    return request<Article>(userId, `/articles/${articleId}`);
+  getArticle(articleId: string) {
+    return request<Article>(`/articles/${articleId}`);
   },
-  listMyArticles(userId: MockUserId) {
-    return request<Article[]>(userId, "/articles/mine");
+  listMyArticles() {
+    return request<Article[]>("/articles/mine");
   },
-  listArticleVersions(userId: MockUserId, articleId: string) {
-    return request<ArticleContentVersion[]>(userId, `/articles/${articleId}/versions`);
+  listArticleVersions(articleId: string) {
+    return request<ArticleContentVersion[]>(`/articles/${articleId}/versions`);
   },
-  withdrawArticle(userId: MockUserId, articleId: string) {
-    return request<Article>(userId, `/articles/${articleId}/withdraw`, { method: "POST" });
+  withdrawArticle(articleId: string) {
+    return request<Article>(`/articles/${articleId}/withdraw`, { method: "POST" });
   },
-  deleteArticle(userId: MockUserId, articleId: string) {
-    return request<Article>(userId, `/articles/${articleId}`, { method: "DELETE" });
+  deleteArticle(articleId: string) {
+    return request<Article>(`/articles/${articleId}`, { method: "DELETE" });
   },
-  recordArticleView(userId: MockUserId, articleId: string) {
-    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/views`, { method: "POST" });
+  recordArticleView(articleId: string) {
+    return request<ArticleInteraction>(`/articles/${articleId}/interactions/views`, { method: "POST" });
   },
-  setArticleLike(userId: MockUserId, articleId: string, liked: boolean) {
-    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/likes`, {
+  setArticleLike(articleId: string, liked: boolean) {
+    return request<ArticleInteraction>(`/articles/${articleId}/interactions/likes`, {
       method: liked ? "PUT" : "DELETE",
     });
   },
-  setArticleFavorite(userId: MockUserId, articleId: string, favorited: boolean) {
-    return request<ArticleInteraction>(userId, `/articles/${articleId}/interactions/favorites`, {
+  setArticleFavorite(articleId: string, favorited: boolean) {
+    return request<ArticleInteraction>(`/articles/${articleId}/interactions/favorites`, {
       method: favorited ? "PUT" : "DELETE",
     });
   },
-  listArticleComments(userId: MockUserId, articleId: string) {
-    return request<ArticleComment[]>(userId, `/articles/${articleId}/comments`);
+  listArticleComments(articleId: string) {
+    return request<ArticleComment[]>(`/articles/${articleId}/comments`);
   },
-  createArticleComment(userId: MockUserId, articleId: string, content: string, parentId: string | null = null) {
-    return request<ArticleComment>(userId, `/articles/${articleId}/comments`, {
+  createArticleComment(articleId: string, content: string, parentId: string | null = null) {
+    return request<ArticleComment>(`/articles/${articleId}/comments`, {
       method: "POST",
       body: JSON.stringify({ content, parentId }),
     });
   },
-  updateArticleComment(userId: MockUserId, articleId: string, commentId: string, content: string) {
-    return request<ArticleComment>(userId, `/articles/${articleId}/comments/${commentId}`, {
+  updateArticleComment(articleId: string, commentId: string, content: string) {
+    return request<ArticleComment>(`/articles/${articleId}/comments/${commentId}`, {
       method: "PUT",
       body: JSON.stringify({ content }),
     });
   },
-  deleteArticleComment(userId: MockUserId, articleId: string, commentId: string) {
-    return request<void>(userId, `/articles/${articleId}/comments/${commentId}`, { method: "DELETE" });
+  deleteArticleComment(articleId: string, commentId: string) {
+    return request<void>(`/articles/${articleId}/comments/${commentId}`, { method: "DELETE" });
   },
-  listFavoriteArticles(userId: MockUserId, limit = 50) {
-    return request<PersonalInteractionItem[]>(userId, `/me/knowledge/favorites?limit=${limit}`);
+  listFavoriteArticles(limit = 50) {
+    return request<PersonalInteractionItem[]>(`/me/knowledge/favorites?limit=${limit}`);
   },
-  listRecentViews(userId: MockUserId, limit = 50) {
-    return request<PersonalInteractionItem[]>(userId, `/me/knowledge/recent-views?limit=${limit}`);
+  listRecentViews(limit = 50) {
+    return request<PersonalInteractionItem[]>(`/me/knowledge/recent-views?limit=${limit}`);
   },
-  listTags(userId: MockUserId) {
-    return request<CatalogItem[]>(userId, "/tags");
+  listTags() {
+    return request<CatalogItem[]>("/tags");
   },
-  listCategories(userId: MockUserId) {
-    return request<CatalogItem[]>(userId, "/categories");
+  listCategories() {
+    return request<CatalogItem[]>("/categories");
   },
-  listSubscriptions(userId: MockUserId) {
-    return request<ContentSubscription[]>(userId, "/subscriptions");
+  listSubscriptions() {
+    return request<ContentSubscription[]>("/subscriptions");
   },
-  subscribe(userId: MockUserId, targetType: ContentSubscription["targetType"], targetId: string) {
+  subscribe(targetType: ContentSubscription["targetType"], targetId: string) {
     return request<ContentSubscription>(
-      userId,
       `/subscriptions/${targetType}/${encodeURIComponent(targetId)}`,
       { method: "PUT" },
     );
   },
-  unsubscribe(userId: MockUserId, targetType: ContentSubscription["targetType"], targetId: string) {
+  unsubscribe(targetType: ContentSubscription["targetType"], targetId: string) {
     return request<void>(
-      userId,
       `/subscriptions/${targetType}/${encodeURIComponent(targetId)}`,
       { method: "DELETE" },
     );
   },
-  listNotifications(userId: MockUserId) {
-    return request<UserNotification[]>(userId, "/notifications");
+  listNotifications() {
+    return request<UserNotification[]>("/notifications");
   },
-  notificationUnreadCount(userId: MockUserId) {
-    return request<{ count: number }>(userId, "/notifications/unread-count");
+  notificationUnreadCount() {
+    return request<{ count: number }>("/notifications/unread-count");
   },
-  markNotificationRead(userId: MockUserId, notificationId: string) {
-    return request<UserNotification>(userId, `/notifications/${notificationId}/read`, { method: "PUT" });
+  markNotificationRead(notificationId: string) {
+    return request<UserNotification>(`/notifications/${notificationId}/read`, { method: "PUT" });
   },
-  markAllNotificationsRead(userId: MockUserId) {
-    return request<{ count: number }>(userId, "/notifications/read-all", { method: "PUT" });
+  markAllNotificationsRead() {
+    return request<{ count: number }>("/notifications/read-all", { method: "PUT" });
   },
-  search(userId: MockUserId, query: string) {
-    return request<SearchResponse>(userId, `/search/articles?q=${encodeURIComponent(query)}`);
+  search(query: string) {
+    return request<SearchResponse>(`/search/articles?q=${encodeURIComponent(query)}`);
   },
-  homeFeed(userId: MockUserId, limit = 6) {
-    return request<HomeFeed>(userId, `/articles/feed?limit=${limit}`);
+  homeFeed(limit = 6) {
+    return request<HomeFeed>(`/articles/feed?limit=${limit}`);
   },
-  discoverArticles(userId: MockUserId, targetType: ArticleDiscovery["targetType"], targetId: string, limit = 30) {
+  discoverArticles(targetType: ArticleDiscovery["targetType"], targetId: string, limit = 30) {
     const query = new URLSearchParams({ type: targetType, targetId, limit: String(limit) });
-    return request<ArticleDiscovery>(userId, `/articles/discovery?${query.toString()}`);
+    return request<ArticleDiscovery>(`/articles/discovery?${query.toString()}`);
   },
-  listKnowledgeCollections(userId: MockUserId, mine = false, limit = 20) {
+  listKnowledgeCollections(mine = false, limit = 20) {
     const query = new URLSearchParams({ mine: String(mine), limit: String(limit) });
-    return request<KnowledgeCollectionSummary[]>(userId, `/collections?${query.toString()}`);
+    return request<KnowledgeCollectionSummary[]>(`/collections?${query.toString()}`);
   },
-  getKnowledgeCollection(userId: MockUserId, collectionId: string) {
-    return request<KnowledgeCollectionDetail>(userId, `/collections/${encodeURIComponent(collectionId)}`);
+  getKnowledgeCollection(collectionId: string) {
+    return request<KnowledgeCollectionDetail>(`/collections/${encodeURIComponent(collectionId)}`);
   },
-  listCollectionCandidates(userId: MockUserId, limit = 50) {
-    return request<HomeFeedItem[]>(userId, `/collections/candidates?limit=${limit}`);
+  listCollectionCandidates(limit = 50) {
+    return request<HomeFeedItem[]>(`/collections/candidates?limit=${limit}`);
   },
-  createKnowledgeCollection(userId: MockUserId, collection: SaveKnowledgeCollection) {
-    return request<KnowledgeCollectionDetail>(userId, "/collections", {
+  createKnowledgeCollection(collection: SaveKnowledgeCollection) {
+    return request<KnowledgeCollectionDetail>("/collections", {
       method: "POST",
       body: JSON.stringify(collection),
     });
   },
-  updateKnowledgeCollection(userId: MockUserId, collectionId: string, collection: SaveKnowledgeCollection) {
-    return request<KnowledgeCollectionDetail>(userId, `/collections/${encodeURIComponent(collectionId)}`, {
+  updateKnowledgeCollection(collectionId: string, collection: SaveKnowledgeCollection) {
+    return request<KnowledgeCollectionDetail>(`/collections/${encodeURIComponent(collectionId)}`, {
       method: "PUT",
       body: JSON.stringify(collection),
     });
   },
-  deleteKnowledgeCollection(userId: MockUserId, collectionId: string) {
-    return request<void>(userId, `/collections/${encodeURIComponent(collectionId)}`, { method: "DELETE" });
+  deleteKnowledgeCollection(collectionId: string) {
+    return request<void>(`/collections/${encodeURIComponent(collectionId)}`, { method: "DELETE" });
   },
 };
