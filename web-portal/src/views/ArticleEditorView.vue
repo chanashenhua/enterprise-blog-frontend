@@ -3,11 +3,9 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowLeft, BookOpenCheck, CircleCheck, Save, Send, ShieldCheck, Sparkles } from "lucide-vue-next";
 import { api, type Article } from "@/api/client";
-import { useUserContext } from "@/composables/userContext";
 
 const props = defineProps<{ id?: string }>();
 const router = useRouter();
-const { userId } = useUserContext();
 const currentArticleId = ref(props.id ?? "");
 const title = ref("");
 const body = ref("");

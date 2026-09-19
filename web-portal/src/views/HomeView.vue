@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuth } from "@/auth/auth";
+const { canWrite } = useAuth();
 import { computed, onMounted, ref, watch } from "vue";
 import {
   ArrowUpRight,
@@ -24,7 +26,7 @@ import { useUserContext } from "@/composables/userContext";
 
 type FeedSection = "latest" | "popular" | "subscribed";
 
-const { userId, userLabel } = useUserContext();
+const { userLabel } = useUserContext();
 const feed = ref<HomeFeed>();
 const recommendedCollections = ref<KnowledgeCollectionSummary[]>([]);
 const loading = ref(true);
@@ -74,7 +76,6 @@ function generatedLabel(): string {
 }
 
 onMounted(loadFeed);
-watch(userId, loadFeed);
 </script>
 
 <template>
@@ -87,7 +88,7 @@ watch(userId, loadFeed);
           以 {{ userLabel }} 身份进入，记录问题、方案与边界，让散落在项目里的经验成为团队下一次决策的起点。
         </p>
         <div class="command-row">
-          <RouterLink class="button primary hero-command" to="/articles/new">
+          <RouterLink v-if="canWrite" class="button primary hero-command" to="/articles/new">
             <FilePenLine :size="17" /> 开始写作 <ArrowUpRight :size="16" />
           </RouterLink>
           <RouterLink class="button secondary hero-command" to="/explore"><Search :size="17" /> 探索知识</RouterLink>
@@ -190,7 +191,7 @@ watch(userId, loadFeed);
         <p v-if="activeSection === 'subscribed'">关注感兴趣的分类或标签，新文章会在这里出现。</p>
         <p v-else>发布第一篇团队知识，让经验开始流动。</p>
         <RouterLink v-if="activeSection === 'subscribed'" class="text-action" to="/subscriptions">管理我的订阅 <ArrowUpRight :size="14" /></RouterLink>
-        <RouterLink v-else class="text-action" to="/articles/new">开始写作 <ArrowUpRight :size="14" /></RouterLink>
+        <RouterLink v-else-if="canWrite" class="text-action" to="/articles/new">开始写作 <ArrowUpRight :size="14" /></RouterLink>
       </div>
     </section>
 
@@ -224,12 +225,12 @@ watch(userId, loadFeed);
         <p>不只保存结论，也保留判断过程和适用边界。</p>
       </header>
       <div class="workflow-grid">
-        <RouterLink to="/articles/new">
+        <RouterLink v-if="canWrite" to="/articles/new">
           <span>01</span><FilePenLine :size="22" />
           <div><strong>记录与起草</strong><small>把上下文和推导过程写清楚</small></div>
           <ArrowUpRight :size="17" />
         </RouterLink>
-        <RouterLink to="/articles">
+        <RouterLink v-if="canWrite" to="/articles">
           <span>02</span><ShieldCheck :size="22" />
           <div><strong>审核与沉淀</strong><small>在合适的范围内安全共享</small></div>
           <ArrowUpRight :size="17" />

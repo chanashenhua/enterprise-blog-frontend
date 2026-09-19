@@ -13,10 +13,8 @@ import {
   UserRound,
 } from "lucide-vue-next";
 import { api, type KnowledgeCollectionDetail } from "@/api/client";
-import { useUserContext } from "@/composables/userContext";
 
 const props = defineProps<{ id: string }>();
-const { userId } = useUserContext();
 const collection = ref<KnowledgeCollectionDetail>();
 const loading = ref(true);
 const error = ref("");
@@ -39,7 +37,7 @@ function formatDate(value: string): string {
 }
 
 onMounted(loadCollection);
-watch([userId, () => props.id], loadCollection);
+watch(() => props.id, loadCollection);
 </script>
 
 <template>

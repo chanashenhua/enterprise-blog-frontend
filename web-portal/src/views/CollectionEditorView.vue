@@ -16,11 +16,9 @@ import {
   X,
 } from "lucide-vue-next";
 import { api, type HomeFeedItem } from "@/api/client";
-import { useUserContext } from "@/composables/userContext";
 
 const props = defineProps<{ id?: string }>();
 const router = useRouter();
-const { userId } = useUserContext();
 const title = ref("");
 const description = ref("");
 const candidates = ref<HomeFeedItem[]>([]);
@@ -131,7 +129,7 @@ async function deleteCollection() {
 }
 
 onMounted(loadEditor);
-watch([userId, () => props.id], loadEditor);
+watch(() => props.id, loadEditor);
 </script>
 
 <template>

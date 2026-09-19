@@ -1,4 +1,4 @@
-import { AuthenticationRequiredError, authorizationHeaders, handleUnauthorized } from "@/auth/auth";
+import { AuthenticationRequiredError, authorizationContext, handleUnauthorized } from "@/auth/auth";
 
 export type Article = {
   id: string;
@@ -147,33 +147,28 @@ export type SaveKnowledgeCollection = {
 
 type SearchResponse = { items: SearchArticle[]; total: number; page: number; size: number };
 
-async function requestHeaders(hasBody = false): Promise<Headers> {
-  const headers = new Headers(await authorizationHeaders());
-  if (hasBody) headers.set("Content-Type", "application/json");
-  return headers;
-}
-
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const auth = await authorizationContext();
+  const headers = new Headers(auth.headers);
+  if (init.body !== undefined) headers.set("Content-Type", "application/json");
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? "/api"}${path}`, {
-    ...init,
-    headers: await requestHeaders(init.body !== undefined),
+    ...init, headers, signal: auth.signal,
   });
+  auth.assertCurrent();
   if (response.status === 401) {
-    await handleUnauthorized();
+    await handleUnauthorized(auth.generation);
     throw new AuthenticationRequiredError();
   }
   if (!response.ok) {
-    const rawMessage = await response.text();
-    try {
-      const error = JSON.parse(rawMessage) as { message?: string };
-      throw new Error(error.message || "请求失败");
-    } catch (reason) {
-      if (reason instanceof SyntaxError) throw new Error(rawMessage || "请求失败");
-      throw reason;
-    }
+    const raw = await response.text();
+    auth.assertCurrent();
+    let message = raw || "请求失败";
+    try { message = (JSON.parse(raw) as { message?: string }).message || message; } catch { /* Plain text errors are also supported. */ }
+    throw new Error(message);
   }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  const result = response.status === 204 ? undefined : await response.json();
+  auth.assertCurrent();
+  return result as T;
 }
 
 export function articleContentJson(text: string): string {

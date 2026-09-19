@@ -11,9 +11,7 @@ import {
   UserRound,
 } from "lucide-vue-next";
 import { api, type KnowledgeCollectionSummary } from "@/api/client";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const collections = ref<KnowledgeCollectionSummary[]>([]);
 const mineOnly = ref(false);
 const loading = ref(true);
@@ -37,7 +35,7 @@ function formatDate(value: string): string {
 }
 
 onMounted(loadCollections);
-watch([userId, mineOnly], loadCollections);
+watch(mineOnly, loadCollections);
 </script>
 
 <template>

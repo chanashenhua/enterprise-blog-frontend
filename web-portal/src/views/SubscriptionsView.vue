@@ -3,9 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { BellRing, Check, FolderTree, Hash, RefreshCw, Rss, Sparkles } from "lucide-vue-next";
 import { api, type CatalogItem, type ContentSubscription } from "@/api/client";
 import { subscriptionKey } from "@/subscriptionPresentation";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const tags = ref<CatalogItem[]>([]);
 const categories = ref<CatalogItem[]>([]);
 const subscriptions = ref<ContentSubscription[]>([]);
@@ -72,7 +70,6 @@ async function toggle(type: ContentSubscription["targetType"], item: CatalogItem
 }
 
 onMounted(load);
-watch(userId, load);
 </script>
 
 <template>

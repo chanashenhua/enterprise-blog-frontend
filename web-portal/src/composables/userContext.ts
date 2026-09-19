@@ -1,14 +1,11 @@
 import { computed } from "vue";
-import { AuthenticationRequiredError, DEMO_USERS, useAuth } from "@/auth/auth";
+import { useAuth } from "@/auth/auth";
 
+// Display-only compatibility adapter. Authentication is owned by useAuth.
 export function useUserContext() {
   const { user } = useAuth();
   return {
-    userId: computed(() => {
-      if (!user.value) throw new AuthenticationRequiredError();
-      return user.value.id;
-    }),
+    userId: computed(() => user.value?.id ?? ""),
     userLabel: computed(() => user.value?.displayName ?? ""),
-    labels: Object.fromEntries(Object.values(DEMO_USERS).map((item) => [item.id, item.displayName])),
   };
 }

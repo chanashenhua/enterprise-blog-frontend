@@ -2,13 +2,13 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowRight, BookOpenText, Building2, Check, KeyRound, LockKeyhole, Sparkles, UsersRound } from "lucide-vue-next";
-import { DEMO_USERS, type DemoUserId, useAuth } from "@/auth/auth";
+import { DEMO_USERS, useAuth } from "@/auth/auth";
 import { safeRedirect } from "@/auth/navigation";
 
 const route = useRoute();
 const router = useRouter();
 const { login, mode, error: authError } = useAuth();
-const busyUser = ref<DemoUserId | null>(null);
+const busyUser = ref<string | null>(null);
 const message = ref("");
 const accounts = [
   { user: DEMO_USERS["u-admin"], tone: "violet", title: "平台管理员", summary: "浏览、创作并体验治理能力", scope: "平台部 · 搜索团队", abilities: ["全局内容", "审核治理", "文章创作"] },
@@ -16,8 +16,8 @@ const accounts = [
   { user: DEMO_USERS["u-reader"], tone: "amber", title: "企业读者", summary: "发现、订阅与收藏优质内容", scope: "支付部 · 支付团队", abilities: ["内容阅读", "订阅收藏", "互动评论"] },
 ];
 
-async function selectAccount(userId: DemoUserId) {
-  busyUser.value = userId; message.value = "";
+async function selectAccount(userId?: string) {
+  busyUser.value = userId ?? "oidc"; message.value = "";
   try { await login(userId); await router.replace(safeRedirect(route.query.redirect)); }
   catch (reason) { message.value = reason instanceof Error ? reason.message : "登录失败，请检查本地配置"; }
   finally { busyUser.value = null; }

@@ -1,6 +1,5 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, createMemoryHistory } from "vue-router";
 import { initializeAuth, useAuth } from "./auth/auth";
-import { safeRedirect } from "./auth/navigation";
 import DashboardView from "./views/DashboardView.vue";
 import ReviewQueueView from "./views/ReviewQueueView.vue";
 import SearchIndexTasksView from "./views/SearchIndexTasksView.vue";
@@ -12,7 +11,8 @@ import CommentGovernanceView from "./views/CommentGovernanceView.vue";
 import ForbiddenView from "./views/ForbiddenView.vue";
 import LoginView from "./views/LoginView.vue";
 
-const router = createRouter({ history: createWebHistory(import.meta.env.BASE_URL), routes: [
+export function createAppRouter(history = createWebHistory(import.meta.env.BASE_URL)) {
+const router = createRouter({ history, routes: [
   { path: "/login", name: "login", component: LoginView, meta: { publicLayout: true } },
   { path: "/forbidden", name: "forbidden", component: ForbiddenView, meta: { publicLayout: true, requiresAuth: true } },
   { path: "/", component: DashboardView, meta: { requiresAuth: true, requiresRole: "ADMIN" } },
@@ -30,9 +30,9 @@ router.beforeEach(async (to) => {
   const { isAuthenticated, hasRole } = useAuth();
   if (to.name === "login") {
     if (!isAuthenticated.value) return true;
-    return hasRole("ADMIN") ? safeRedirect(to.query.redirect) : { name: "forbidden" };
+    return hasRole("ADMIN") ? "/" : { name: "forbidden" };
   }
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
+  if (!isAuthenticated.value) {
     return { name: "login", query: { redirect: to.fullPath } };
   }
   if (to.name === "forbidden") return hasRole("ADMIN") ? "/" : true;
@@ -40,4 +40,7 @@ router.beforeEach(async (to) => {
   return true;
 });
 
-export default router;
+return router;
+}
+
+export default createAppRouter(typeof window === "undefined" ? createMemoryHistory() : createWebHistory(import.meta.env.BASE_URL));

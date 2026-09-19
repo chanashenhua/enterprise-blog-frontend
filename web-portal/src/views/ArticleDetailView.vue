@@ -23,11 +23,13 @@ import {
 import { api, type Article, type ArticleComment, type ArticleContentVersion, type ArticleInteraction } from "@/api/client";
 import { articleStatusLabels, canEditArticle, canWithdrawArticle } from "@/articlePresentation";
 import { canManageComment, commentPlaceholder, groupCommentThreads, visibleCommentCount } from "@/commentPresentation";
+import { useAuth } from "@/auth/auth";
 import { useUserContext } from "@/composables/userContext";
 
 const props = defineProps<{ id: string }>();
 const router = useRouter();
 const { userId } = useUserContext();
+const { user, hasRole } = useAuth();
 const article = ref<Article>();
 const versions = ref<ArticleContentVersion[]>([]);
 const interaction = ref<ArticleInteraction>();
@@ -47,7 +49,7 @@ const replyingTo = ref("");
 const replyContent = ref("");
 const editingCommentId = ref("");
 const editContent = ref("");
-const canManage = computed(() => article.value?.authorId === userId.value || userId.value === "u-admin");
+const canManage = computed(() => article.value?.authorId === userId.value || hasRole("ADMIN"));
 const commentThreads = computed(() => groupCommentThreads(comments.value));
 const commentCount = computed(() => visibleCommentCount(comments.value));
 
@@ -290,7 +292,7 @@ async function remove() {
 }
 
 onMounted(loadArticle);
-watch([userId, () => props.id], loadArticle);
+watch(() => props.id, loadArticle);
 </script>
 
 <template>
@@ -454,7 +456,7 @@ watch([userId, () => props.id], loadArticle);
                     <Reply :size="14" /> {{ replyingTo === thread.root.id ? "收起回复" : "回复" }}
                   </button>
                   <button
-                    v-if="canManageComment(thread.root, userId)"
+                    v-if="canManageComment(thread.root, userId, user?.roles)"
                     class="text-action"
                     type="button"
                     :disabled="Boolean(commentActionId)"
@@ -463,7 +465,7 @@ watch([userId, () => props.id], loadArticle);
                     <Pencil :size="13" /> 编辑
                   </button>
                   <button
-                    v-if="canManageComment(thread.root, userId)"
+                    v-if="canManageComment(thread.root, userId, user?.roles)"
                     class="text-action danger-text"
                     type="button"
                     :disabled="Boolean(commentActionId)"
@@ -519,7 +521,7 @@ watch([userId, () => props.id], loadArticle);
                   <p v-else-if="commentPlaceholder(reply)" class="comment-placeholder">{{ commentPlaceholder(reply) }}</p>
                   <p v-else class="comment-content">{{ reply.content }}</p>
 
-                  <div v-if="editingCommentId !== reply.id && canManageComment(reply, userId)" class="comment-actions">
+                  <div v-if="editingCommentId !== reply.id && canManageComment(reply, userId, user?.roles)" class="comment-actions">
                     <button class="text-action" type="button" :disabled="Boolean(commentActionId)" @click="startEditing(reply)">
                       <Pencil :size="13" /> 编辑
                     </button>

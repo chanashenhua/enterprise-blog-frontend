@@ -2,9 +2,7 @@
 import { ref } from "vue";
 import { ArrowUpRight, BookOpenText, Search, Sparkles, Tags } from "lucide-vue-next";
 import { api, type SearchArticle } from "@/api/client";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const query = ref("");
 const results = ref<SearchArticle[]>([]);
 const total = ref<number>();

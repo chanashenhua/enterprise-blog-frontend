@@ -4,11 +4,9 @@ import { RouterLink } from "vue-router";
 import { ArrowUpRight, Bell, BookHeart, Clock3, Eye, Library, LibraryBig, RefreshCw, Rss, Tags, X } from "lucide-vue-next";
 import { api, type Article, type PersonalInteractionItem } from "@/api/client";
 import { formatInteractionTime, visibleKnowledgeEntries } from "@/libraryPresentation";
-import { useUserContext } from "@/composables/userContext";
 
 type LibraryTab = "favorites" | "recent";
 
-const { userId } = useUserContext();
 const activeTab = ref<LibraryTab>("favorites");
 const favorites = ref<PersonalInteractionItem[]>([]);
 const recentViews = ref<PersonalInteractionItem[]>([]);
@@ -66,7 +64,6 @@ async function removeFavorite(articleId: string) {
 }
 
 onMounted(loadKnowledge);
-watch(userId, loadKnowledge);
 </script>
 
 <template>

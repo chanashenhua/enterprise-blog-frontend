@@ -1,4 +1,4 @@
-import { AuthenticationRequiredError, authorizationHeaders, handleUnauthorized } from "@/auth/auth";
+import { AuthenticationRequiredError, authorizationContext, handleUnauthorized } from "@/auth/auth";
 
 export type ReviewTicket = { id: string; articleId: string; status: string };
 export type SearchTask = { id: string; articleId: string; status: string; retryCount: number };
@@ -115,21 +115,28 @@ export type ContentOperationsOverview = {
   collectionOwnerCount: number;
 };
 
-const headers = async () => {
-  const values = new Headers(await authorizationHeaders());
-  return values;
-};
-
-async function request<T>(path: string, init: RequestInit = {}) {
-  const requestHeaders = await headers();
-  if (init.body) requestHeaders.set("Content-Type", "application/json");
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? "/api"}${path}`, { ...init, headers: requestHeaders });
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const auth = await authorizationContext();
+  const headers = new Headers(auth.headers);
+  if (init.body !== undefined) headers.set("Content-Type", "application/json");
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? "/api"}${path}`, {
+    ...init, headers, signal: auth.signal,
+  });
+  auth.assertCurrent();
   if (response.status === 401) {
-    await handleUnauthorized();
+    await handleUnauthorized(auth.generation);
     throw new AuthenticationRequiredError();
   }
-  if (!response.ok) throw new Error(await response.text() || "请求失败");
-  return response.status === 204 ? undefined as T : response.json() as Promise<T>;
+  if (!response.ok) {
+    const raw = await response.text();
+    auth.assertCurrent();
+    let message = raw || "请求失败";
+    try { message = (JSON.parse(raw) as { message?: string }).message || message; } catch { /* Plain text errors are also supported. */ }
+    throw new Error(message);
+  }
+  const result = response.status === 204 ? undefined : await response.json();
+  auth.assertCurrent();
+  return result as T;
 }
 
 export const api = {

@@ -42,9 +42,9 @@ describe("comment presentation", () => {
     const hidden = comment({ hidden: true, content: null });
 
     expect(canManageComment(active, "u-author")).toBe(true);
-    expect(canManageComment(active, "u-admin")).toBe(true);
+    expect(canManageComment(active, "u-admin", ["ADMIN"])).toBe(true);
     expect(canManageComment(active, "u-reader")).toBe(false);
-    expect(canManageComment(hidden, "u-admin")).toBe(false);
+    expect(canManageComment(hidden, "u-admin", ["ADMIN"])).toBe(false);
   });
 
   it("uses safe placeholders for governed comments", () => {

@@ -2,13 +2,13 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowRight, BarChart3, Building2, Check, KeyRound, LockKeyhole, ShieldCheck, Sparkles } from "lucide-vue-next";
-import { DEMO_USERS, type DemoUserId, useAuth } from "@/auth/auth";
+import { DEMO_USERS, useAuth } from "@/auth/auth";
 import { safeRedirect } from "@/auth/navigation";
 
 const route = useRoute();
 const router = useRouter();
 const { login, mode, error: authError } = useAuth();
-const busyUser = ref<DemoUserId | null>(null);
+const busyUser = ref<string | null>(null);
 const message = ref("");
 const accounts = [
   { user: DEMO_USERS["u-admin"], tone: "violet", title: "平台管理员", summary: "可进入管理台并使用全部治理功能", scope: "平台部 · 搜索团队", abilities: ["内容治理", "审核管理", "审计分析"] },
@@ -16,8 +16,8 @@ const accounts = [
   { user: DEMO_USERS["u-reader"], tone: "amber", title: "企业读者", summary: "可验证身份，但没有管理台权限", scope: "支付部 · 支付团队", abilities: ["身份验证", "前台阅读"] },
 ];
 
-async function selectAccount(userId: DemoUserId) {
-  busyUser.value = userId; message.value = "";
+async function selectAccount(userId?: string) {
+  busyUser.value = userId ?? "oidc"; message.value = "";
   try {
     const session = await login(userId);
     await router.replace(session.user.roles.includes("ADMIN") ? safeRedirect(route.query.redirect) : "/forbidden");

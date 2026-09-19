@@ -1,6 +1,5 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, createMemoryHistory } from "vue-router";
 import { initializeAuth, useAuth } from "./auth/auth";
-import { safeRedirect } from "./auth/navigation";
 import ArticleDetailView from "./views/ArticleDetailView.vue";
 import ArticleEditorView from "./views/ArticleEditorView.vue";
 import HomeView from "./views/HomeView.vue";
@@ -14,10 +13,13 @@ import NotificationsView from "./views/NotificationsView.vue";
 import SearchView from "./views/SearchView.vue";
 import SubscriptionsView from "./views/SubscriptionsView.vue";
 import LoginView from "./views/LoginView.vue";
+import ForbiddenView from "./views/ForbiddenView.vue";
 
+export function createAppRouter(history = createWebHistory(import.meta.env.BASE_URL)) {
 const router = createRouter({
-  history: createWebHistory(),
+  history,
   routes: [
+    { path: "/forbidden", name: "forbidden", component: ForbiddenView, meta: { publicLayout: true } },
     { path: "/login", name: "login", component: LoginView, meta: { publicLayout: true } },
     { path: "/", component: HomeView, meta: { requiresAuth: true } },
     { path: "/explore", component: ExploreView, meta: { requiresAuth: true } },
@@ -25,9 +27,9 @@ const router = createRouter({
     { path: "/collections/new", component: CollectionEditorView, meta: { requiresAuth: true } },
     { path: "/collections/:id/edit", component: CollectionEditorView, props: true, meta: { requiresAuth: true } },
     { path: "/collections/:id", component: CollectionDetailView, props: true, meta: { requiresAuth: true } },
-    { path: "/articles", component: MyArticlesView, meta: { requiresAuth: true } },
-    { path: "/articles/new", component: ArticleEditorView, meta: { requiresAuth: true } },
-    { path: "/articles/:id/edit", component: ArticleEditorView, props: true, meta: { requiresAuth: true } },
+    { path: "/articles", component: MyArticlesView, meta: { requiresAuth: true, requiresWrite: true } },
+    { path: "/articles/new", component: ArticleEditorView, meta: { requiresAuth: true, requiresWrite: true } },
+    { path: "/articles/:id/edit", component: ArticleEditorView, props: true, meta: { requiresAuth: true, requiresWrite: true } },
     { path: "/articles/:id", component: ArticleDetailView, props: true, meta: { requiresAuth: true } },
     { path: "/library", component: KnowledgeLibraryView, meta: { requiresAuth: true } },
     { path: "/notifications", component: NotificationsView, meta: { requiresAuth: true } },
@@ -38,14 +40,18 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   await initializeAuth();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, canWrite } = useAuth();
   if (to.name === "login") {
-    return isAuthenticated.value ? safeRedirect(to.query.redirect) : true;
+    return isAuthenticated.value ? "/" : true;
   }
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
+  if (!isAuthenticated.value) {
     return { name: "login", query: { redirect: to.fullPath } };
   }
+  if (to.meta.requiresWrite && !canWrite.value) return { name: "forbidden" };
   return true;
 });
 
-export default router;
+return router;
+}
+
+export default createAppRouter(typeof window === "undefined" ? createMemoryHistory() : createWebHistory(import.meta.env.BASE_URL));

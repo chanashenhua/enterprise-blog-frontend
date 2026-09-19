@@ -4,9 +4,7 @@ import { RouterLink } from "vue-router";
 import { ArrowUpRight, Eye, FilePenLine, Globe2, Plus, RotateCcw, Tags, Trash2 } from "lucide-vue-next";
 import { api, type Article } from "@/api/client";
 import { articleStatusLabels, canEditArticle, canWithdrawArticle } from "@/articlePresentation";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const articles = ref<Article[]>([]);
 const loading = ref(true);
 const actionArticleId = ref("");
@@ -55,7 +53,6 @@ async function remove(article: Article) {
 }
 
 onMounted(loadArticles);
-watch(userId, loadArticles);
 </script>
 
 <template>

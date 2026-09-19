@@ -13,9 +13,7 @@ import {
 } from "lucide-vue-next";
 import { api, type UserNotification } from "@/api/client";
 import { useNotificationState } from "@/composables/notificationState";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const { unreadCount, refreshUnreadCount } = useNotificationState();
 const notifications = ref<UserNotification[]>([]);
 const loading = ref(true);
@@ -72,7 +70,6 @@ function resourceLink(notification: UserNotification) {
 }
 
 onMounted(loadNotifications);
-watch(userId, loadNotifications);
 </script>
 
 <template>

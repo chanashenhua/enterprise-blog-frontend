@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuth } from "@/auth/auth";
+const { canWrite } = useAuth();
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -21,14 +23,12 @@ import {
   type ContentSubscription,
   type HomeFeedItem,
 } from "@/api/client";
-import { useUserContext } from "@/composables/userContext";
 import { subscriptionKey } from "@/subscriptionPresentation";
 
 type DiscoveryType = ArticleDiscovery["targetType"];
 
 const route = useRoute();
 const router = useRouter();
-const { userId } = useUserContext();
 const categories = ref<CatalogItem[]>([]);
 const tags = ref<CatalogItem[]>([]);
 const subscriptions = ref<ContentSubscription[]>([]);
@@ -158,7 +158,6 @@ function formatDate(value: string): string {
 }
 
 onMounted(load);
-watch(userId, load);
 watch(
   () => `${routeValue(route.query.type)}:${routeValue(route.query.id)}`,
   async () => {
@@ -271,7 +270,7 @@ watch(
           <Compass :size="26" />
           <strong>这个主题下还没有可见文章</strong>
           <p>可能尚未发布内容，也可能当前身份不在文章的可见范围内。</p>
-          <RouterLink class="text-action" to="/articles/new">写下第一篇知识 <ArrowUpRight :size="14" /></RouterLink>
+          <RouterLink v-if="canWrite" class="text-action" to="/articles/new">写下第一篇知识 <ArrowUpRight :size="14" /></RouterLink>
         </div>
       </section>
     </div>
