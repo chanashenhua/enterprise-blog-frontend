@@ -41,6 +41,10 @@ VITE_MOCK_OIDC_TOKEN=local-dev-token
 
 ## 验证
 
+员工端文章编辑器支持 Markdown 编辑、对照和服务端预览；分类与标签支持搜索选择。重新编辑时读取源文，旧文章保持纯文本模式。未保存离开时有提醒，暂不支持自动保存。更新后需要在 IDEA 重新加载 Maven 并重启文章服务（新增 CommonMark 依赖），否则新正文格式和预览接口不可用。
+
+预览不会保存文章；分类标签服务或预览失败可重试，内容不会被清空。正文上限 100,000 字符，不支持原始 HTML 执行或表格等 Markdown 扩展。组织范围目前仍使用 ID 输入，后续改为目录搜索多选。
+
 ```powershell
 cd web-portal
 npm test -- --run
@@ -53,3 +57,14 @@ npm run build
 cd ../e2e
 npm test
 ```
+
+上述完整 Playwright 流程中，发布搜索与团队审核场景需要真实后端及 Elasticsearch。本轮可独立运行的浏览器回归使用 API 测试桩：
+
+```powershell
+cd e2e
+$env:E2E_PORTAL_URL='http://127.0.0.1:5173'
+$env:E2E_ADMIN_URL='http://127.0.0.1:5174'
+npm test -- article-editor.spec.ts auth-boundaries.spec.ts --project=chromium --workers=2
+```
+
+运行前需启动两端 Vite 开发服务。2026-09-25 回归：员工端 50 项单元测试、管理端 37 项，两端构建、16 项浏览器测试及 1440px／390px 布局验收通过；这不等同于完整后端联调或部署验收。

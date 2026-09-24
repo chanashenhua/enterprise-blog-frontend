@@ -10,7 +10,8 @@ async function publishTeamArticle(page: Page, title: string): Promise<string> {
   await page.goto("/articles/new");
   await page.getByLabel("标题").fill(title);
   await page.getByLabel("正文").fill("仅 Search Team 成员可阅读的索引实践。");
-  await page.getByLabel("标签").fill("elasticsearch");
+  await page.getByLabel("查找标签").fill("elasticsearch");
+  await page.getByRole("button", { name: /^标签 / }).first().click();
   await page.getByLabel("可见性").selectOption("TEAM");
   await page.getByLabel(/目标.*ID/).fill("t-search");
   await page.getByRole("button", { name: "提交发布" }).click();

@@ -1,4 +1,6 @@
 import { AuthenticationRequiredError, authorizationContext, handleUnauthorized } from "@/auth/auth";
+import { articleContentJson, type ArticleFormat } from "@/articleEditor";
+export { articleContentJson } from "@/articleEditor";
 
 export type Article = {
   id: string;
@@ -171,18 +173,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return result as T;
 }
 
-export function articleContentJson(text: string): string {
-  return JSON.stringify({
-    type: "doc",
-    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
-  });
-}
-
 export const api = {
-  createDraft(title: string, text: string, tagIds: string[], categoryId: string | null = null) {
+  previewArticle(text: string, format: ArticleFormat = "markdown") {
+    return request<{ renderedHtml: string; plainText: string }>("/articles/preview", {
+      method: "POST", body: JSON.stringify({ contentJson: articleContentJson(text, format) }),
+    });
+  },
+  createDraft(title: string, text: string, tagIds: string[], categoryId: string | null = null, format: ArticleFormat = "markdown") {
     return request<Article>("/articles/drafts", {
       method: "POST",
-      body: JSON.stringify({ title, contentJson: articleContentJson(text), tagIds, categoryId }),
+      body: JSON.stringify({ title, contentJson: articleContentJson(text, format), tagIds, categoryId }),
     });
   },
   updateDraft(
@@ -191,10 +191,11 @@ export const api = {
     text: string,
     tagIds: string[],
     categoryId: string | null = null,
+    format: ArticleFormat = "markdown",
   ) {
     return request<Article>(`/articles/${articleId}/draft`, {
       method: "PUT",
-      body: JSON.stringify({ title, contentJson: articleContentJson(text), tagIds, categoryId }),
+      body: JSON.stringify({ title, contentJson: articleContentJson(text, format), tagIds, categoryId }),
     });
   },
   publish(articleId: string, visibilityType: string, targetOrgIds: string[], reviewRequired: boolean) {

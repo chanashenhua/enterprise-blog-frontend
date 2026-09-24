@@ -8,6 +8,7 @@ import "./subscriptions.css";
 import "./explore.css";
 import "./collections.css";
 import "./auth.css";
+import "./editor.css";
 
 configureUnauthorizedHandler(async () => {
   const current = router.currentRoute.value;

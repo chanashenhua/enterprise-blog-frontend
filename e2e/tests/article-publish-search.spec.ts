@@ -11,7 +11,8 @@ async function publishCompanyArticle(page: Page, title: string) {
   await page.goto("/articles/new");
   await page.getByLabel("标题").fill(title);
   await page.getByLabel("正文").fill("Redis 通过淘汰策略与持久化设计保障缓存可靠性。");
-  await page.getByLabel("标签").fill("redis");
+  await page.getByLabel("查找标签").fill("redis");
+  await page.getByRole("button", { name: /^标签 / }).first().click();
   await page.getByLabel("可见性").selectOption("COMPANY");
   await page.getByRole("button", { name: "提交发布" }).click();
   await expect(page).toHaveURL(/\/articles\/[^/]+$/);

@@ -35,7 +35,7 @@ describe("authenticated API client", () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/articles/article-1/draft");
     expect(init.method).toBe("PUT");
-    expect(JSON.parse(init.body as string)).toEqual({ title: "新标题", contentJson: JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "新正文" }] }] }), tagIds: ["java"], categoryId: "backend" });
+    expect(JSON.parse(init.body as string)).toEqual({ title: "新标题", contentJson: JSON.stringify({ type: "markdown", version: 1, source: "新正文" }), tagIds: ["java"], categoryId: "backend" });
   });
 
   it("clears the session and redirects only once on concurrent 401 responses", async () => {
@@ -54,5 +54,16 @@ describe("authenticated API client", () => {
     await expect(api.listMyArticles()).rejects.toThrow("无权访问");
     expect(useAuth().isAuthenticated.value).toBe(true);
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("previews through the current identity without a draft write", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"renderedHtml":"<h1>标题</h1>","plainText":"标题"}'));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(api.previewArticle("# 标题\n")).resolves.toEqual({ renderedHtml: "<h1>标题</h1>", plainText: "标题" });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/articles/preview");
+    expect((init.headers as Headers).get("X-Mock-User")).toBe("u-author");
+    expect(JSON.parse(JSON.parse(init.body as string).contentJson)).toEqual({ type: "markdown", version: 1, source: "# 标题\n" });
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 });
