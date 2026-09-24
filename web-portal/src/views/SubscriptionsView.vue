@@ -3,9 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { BellRing, Check, FolderTree, Hash, RefreshCw, Rss, Sparkles } from "lucide-vue-next";
 import { api, type CatalogItem, type ContentSubscription } from "@/api/client";
 import { subscriptionKey } from "@/subscriptionPresentation";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const tags = ref<CatalogItem[]>([]);
 const categories = ref<CatalogItem[]>([]);
 const subscriptions = ref<ContentSubscription[]>([]);
@@ -28,9 +26,9 @@ async function load() {
   notice.value = "";
   try {
     const [tagItems, categoryItems, subscriptionItems] = await Promise.all([
-      api.listTags(userId.value),
-      api.listCategories(userId.value),
-      api.listSubscriptions(userId.value),
+      api.listTags(),
+      api.listCategories(),
+      api.listSubscriptions(),
     ]);
     tags.value = tagItems;
     categories.value = categoryItems;
@@ -49,13 +47,13 @@ async function toggle(type: ContentSubscription["targetType"], item: CatalogItem
   notice.value = "";
   try {
     if (isSubscribed(type, item.id)) {
-      await api.unsubscribe(userId.value, type, item.id);
+      await api.unsubscribe(type, item.id);
       subscriptions.value = subscriptions.value.filter(
         (subscription) => subscriptionKey(subscription.targetType, subscription.targetId) !== key,
       );
       notice.value = `已取消订阅“${item.name}”。`;
     } else {
-      const created = await api.subscribe(userId.value, type, item.id);
+      const created = await api.subscribe(type, item.id);
       subscriptions.value = [
         ...subscriptions.value.filter(
           (subscription) => subscriptionKey(subscription.targetType, subscription.targetId) !== key,
@@ -72,7 +70,6 @@ async function toggle(type: ContentSubscription["targetType"], item: CatalogItem
 }
 
 onMounted(load);
-watch(userId, load);
 </script>
 
 <template>

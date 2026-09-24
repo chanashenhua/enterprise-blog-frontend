@@ -2,9 +2,7 @@
 import { ref } from "vue";
 import { ArrowUpRight, BookOpenText, Search, Sparkles, Tags } from "lucide-vue-next";
 import { api, type SearchArticle } from "@/api/client";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const query = ref("");
 const results = ref<SearchArticle[]>([]);
 const total = ref<number>();
@@ -13,7 +11,7 @@ const message = ref("");
 async function runSearch() {
   message.value = "";
   try {
-    const response = await api.search(userId.value, query.value.trim());
+    const response = await api.search(query.value.trim());
     results.value = response.items;
     total.value = response.total;
   } catch (error) {

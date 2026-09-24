@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
-import { ArrowUpRight, Bell, BookHeart, Clock3, Eye, Library, RefreshCw, Rss, Tags, X } from "lucide-vue-next";
+import { ArrowUpRight, Bell, BookHeart, Clock3, Eye, Library, LibraryBig, RefreshCw, Rss, Tags, X } from "lucide-vue-next";
 import { api, type Article, type PersonalInteractionItem } from "@/api/client";
 import { formatInteractionTime, visibleKnowledgeEntries } from "@/libraryPresentation";
-import { useUserContext } from "@/composables/userContext";
 
 type LibraryTab = "favorites" | "recent";
 
-const { userId } = useUserContext();
 const activeTab = ref<LibraryTab>("favorites");
 const favorites = ref<PersonalInteractionItem[]>([]);
 const recentViews = ref<PersonalInteractionItem[]>([]);
@@ -28,14 +26,14 @@ async function loadKnowledge() {
   notice.value = "";
   try {
     const [favoriteItems, recentItems] = await Promise.all([
-      api.listFavoriteArticles(userId.value),
-      api.listRecentViews(userId.value),
+      api.listFavoriteArticles(),
+      api.listRecentViews(),
     ]);
     favorites.value = favoriteItems;
     recentViews.value = recentItems;
 
     const articleIds = [...new Set([...favoriteItems, ...recentItems].map((item) => item.articleId))];
-    const results = await Promise.allSettled(articleIds.map((articleId) => api.getArticle(userId.value, articleId)));
+    const results = await Promise.allSettled(articleIds.map((articleId) => api.getArticle(articleId)));
     const visibleArticles = new Map<string, Article>();
     results.forEach((result) => {
       if (result.status === "fulfilled") visibleArticles.set(result.value.id, result.value);
@@ -55,7 +53,7 @@ async function removeFavorite(articleId: string) {
   removingArticleId.value = articleId;
   error.value = "";
   try {
-    await api.setArticleFavorite(userId.value, articleId, false);
+    await api.setArticleFavorite(articleId, false);
     favorites.value = favorites.value.filter((item) => item.articleId !== articleId);
     notice.value = "已取消收藏。";
   } catch (reason) {
@@ -66,7 +64,6 @@ async function removeFavorite(articleId: string) {
 }
 
 onMounted(loadKnowledge);
-watch(userId, loadKnowledge);
 </script>
 
 <template>
@@ -97,6 +94,7 @@ watch(userId, loadKnowledge);
     <nav class="library-journey" aria-label="个人知识工作台入口">
       <div><strong>继续整理你的知识流</strong><span>收藏沉淀已有内容，订阅跟进新内容，通知承接最新动态。</span></div>
       <RouterLink to="/subscriptions"><Rss :size="16"/><span><strong>管理订阅</strong><small>选择分类与标签</small></span><ArrowUpRight :size="15"/></RouterLink>
+      <RouterLink to="/collections"><LibraryBig :size="16"/><span><strong>专题路径</strong><small>整理连续阅读</small></span><ArrowUpRight :size="15"/></RouterLink>
       <RouterLink to="/notifications"><Bell :size="16"/><span><strong>查看通知</strong><small>接收订阅更新</small></span><ArrowUpRight :size="15"/></RouterLink>
     </nav>
 

@@ -1,18 +1,11 @@
-import { computed, ref } from "vue";
-import type { MockUserId } from "@/api/client";
+import { computed } from "vue";
+import { useAuth } from "@/auth/auth";
 
-const userId = ref<MockUserId>("u-author");
-
-const labels: Record<MockUserId, string> = {
-  "u-admin": "平台管理员",
-  "u-author": "技术作者",
-  "u-reader": "普通读者",
-};
-
+// Display-only compatibility adapter. Authentication is owned by useAuth.
 export function useUserContext() {
+  const { user } = useAuth();
   return {
-    userId,
-    userLabel: computed(() => labels[userId.value]),
-    labels,
+    userId: computed(() => user.value?.id ?? ""),
+    userLabel: computed(() => user.value?.displayName ?? ""),
   };
 }

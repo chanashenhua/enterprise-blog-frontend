@@ -1,3 +1,5 @@
+import { AuthenticationRequiredError, authorizationContext, handleUnauthorized } from "@/auth/auth";
+
 export type ReviewTicket = { id: string; articleId: string; status: string };
 export type SearchTask = { id: string; articleId: string; status: string; retryCount: number };
 export type Tag = { id: string; name: string };
@@ -100,22 +102,41 @@ export type CommentGovernanceOverview = {
   articleCount: number;
   authorCount: number;
 };
-
-const headers = () => {
-  const values = new Headers({
-    "X-Mock-User": "u-admin", "X-Mock-Roles": "ADMIN,REVIEWER,AUTHOR,READER",
-    "X-Mock-Departments": "d-platform", "X-Mock-Teams": "t-search",
-  });
-  if (import.meta.env.VITE_MOCK_OIDC_TOKEN) values.set("X-Mock-Token", import.meta.env.VITE_MOCK_OIDC_TOKEN);
-  return values;
+export type ContentOperationsOverview = {
+  totalArticleCount: number;
+  publishedArticleCount: number;
+  draftArticleCount: number;
+  pendingReviewArticleCount: number;
+  withdrawnArticleCount: number;
+  categorizedPublishedCount: number;
+  taggedPublishedCount: number;
+  collectionCount: number;
+  collectionArticleCount: number;
+  collectionOwnerCount: number;
 };
 
-async function request<T>(path: string, init: RequestInit = {}) {
-  const requestHeaders = headers();
-  if (init.body) requestHeaders.set("Content-Type", "application/json");
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? "/api"}${path}`, { ...init, headers: requestHeaders });
-  if (!response.ok) throw new Error(await response.text() || "请求失败");
-  return response.status === 204 ? undefined as T : response.json() as Promise<T>;
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const auth = await authorizationContext();
+  const headers = new Headers(auth.headers);
+  if (init.body !== undefined) headers.set("Content-Type", "application/json");
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? "/api"}${path}`, {
+    ...init, headers, signal: auth.signal,
+  });
+  auth.assertCurrent();
+  if (response.status === 401) {
+    await handleUnauthorized(auth.generation);
+    throw new AuthenticationRequiredError();
+  }
+  if (!response.ok) {
+    const raw = await response.text();
+    auth.assertCurrent();
+    let message = raw || "请求失败";
+    try { message = (JSON.parse(raw) as { message?: string }).message || message; } catch { /* Plain text errors are also supported. */ }
+    throw new Error(message);
+  }
+  const result = response.status === 204 ? undefined : await response.json();
+  auth.assertCurrent();
+  return result as T;
 }
 
 export const api = {
@@ -134,6 +155,7 @@ export const api = {
     return request<AuditRecord[]>(`/admin/audits${query}`);
   },
   interactionOverview: (limit = 10) => request<AdminInteractionOverview>(`/admin/stats/overview?limit=${limit}`),
+  contentOperationsOverview: () => request<ContentOperationsOverview>("/admin/content/overview"),
   notificationGovernanceOverview: () => request<NotificationGovernanceOverview>("/admin/notifications/overview"),
   subscriptionGovernanceOverview: () => request<SubscriptionGovernanceOverview>(
     "/admin/notifications/subscriptions/overview",

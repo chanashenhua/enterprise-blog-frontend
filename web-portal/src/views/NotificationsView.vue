@@ -13,9 +13,7 @@ import {
 } from "lucide-vue-next";
 import { api, type UserNotification } from "@/api/client";
 import { useNotificationState } from "@/composables/notificationState";
-import { useUserContext } from "@/composables/userContext";
 
-const { userId } = useUserContext();
 const { unreadCount, refreshUnreadCount } = useNotificationState();
 const notifications = ref<UserNotification[]>([]);
 const loading = ref(true);
@@ -26,8 +24,8 @@ async function loadNotifications() {
   loading.value = true;
   error.value = "";
   try {
-    notifications.value = await api.listNotifications(userId.value);
-    await refreshUnreadCount(userId.value);
+    notifications.value = await api.listNotifications();
+    await refreshUnreadCount();
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : "通知加载失败";
   } finally {
@@ -39,7 +37,7 @@ async function markRead(notification: UserNotification) {
   if (notification.read || busyId.value) return;
   busyId.value = notification.id;
   try {
-    const updated = await api.markNotificationRead(userId.value, notification.id);
+    const updated = await api.markNotificationRead(notification.id);
     notifications.value = notifications.value.map((item) => item.id === updated.id ? updated : item);
     unreadCount.value = Math.max(0, unreadCount.value - 1);
   } finally {
@@ -51,7 +49,7 @@ async function markAllRead() {
   if (!unreadCount.value) return;
   busyId.value = "all";
   try {
-    const response = await api.markAllNotificationsRead(userId.value);
+    const response = await api.markAllNotificationsRead();
     notifications.value = notifications.value.map((item) => ({ ...item, read: true }));
     unreadCount.value = response.count;
   } finally {
@@ -72,7 +70,6 @@ function resourceLink(notification: UserNotification) {
 }
 
 onMounted(loadNotifications);
-watch(userId, loadNotifications);
 </script>
 
 <template>
