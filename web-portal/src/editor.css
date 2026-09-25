@@ -41,5 +41,22 @@
 .article-body ul { list-style: disc; }
 .article-body ol { list-style: decimal; }
 .editor-fields button:focus-visible, .editor-syntax summary:focus-visible { outline: 2px solid #288369; outline-offset: 3px; }
+.org-scope { display: grid; gap: 16px; min-width: 0; }
+.org-scope-summary { display: flex; align-items: flex-start; gap: 12px; padding: 18px; border: 1px solid #d4e3d9; background: #edf4ee; border-radius: 12px; color: #315f4b; }
+.org-scope-summary > svg { flex-shrink: 0; margin-top: 2px; }
+.org-scope-summary strong { font-size: 13px; }
+.org-scope-summary p { margin: 6px 0 0; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.org-scope-heading { display: flex; gap: 12px; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 650; }
+.org-scope-heading small { color: #8b9b91; font-weight: 400; margin-left: 8px; }
+.org-search > span { display: flex; align-items: center; gap: 7px; }
+.org-option-list { display: grid; gap: 8px; max-height: 280px; overflow-y: auto; padding: 3px; }
+.editor-form .org-option { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid #dee6df; border-radius: 10px; background: #fff; cursor: pointer; }
+.editor-form .org-option.selected { border-color: #6a9e84; background: #f2f7f1; }
+.editor-form .org-option input { width: 17px; height: 17px; min-height: 0; padding: 0; flex-shrink: 0; accent-color: #276e50; }
+.org-option > span { display: grid; gap: 4px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.org-option strong { font-size: 13px; font-weight: 650; }
+.org-option small { font-size: 11px; font-weight: 400; color: #809186; }
+.org-option > svg { color: #347958; flex-shrink: 0; }
+.org-empty { margin: 0; border: 1px dashed #d4dfd7; padding: 24px 18px; border-radius: 10px; color: #7c8e81; font-size: 13px; text-align: center; line-height: 1.8; }
 @media (max-width: 1150px) { .writing-studio .editor-workspace { grid-template-columns: minmax(0, 1fr); } .writing-studio .editor-guidance { display: none; } }
 @media (max-width: 760px) { .editor-content-panels.split { grid-template-columns: minmax(0, 1fr); } .writing-studio .view-header { align-items: start; flex-direction: column; gap: 15px; } .editor-source textarea { min-height: 360px; } .editor-format-label { max-width: none; width: 100%; } .editor-toolbar { gap: 12px; } .editor-mode-switch { width: 100%; } .editor-mode-switch button { flex: 1; justify-content: center; } }

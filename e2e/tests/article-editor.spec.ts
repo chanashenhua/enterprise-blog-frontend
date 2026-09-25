@@ -16,6 +16,10 @@ async function setup(page: Page, overrides: Record<string, unknown> = {}) {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const method = request.method();
+    if (path === "/api/organizations/publish-options") return route.fulfill({ json: {
+      departments: [{ id: "d-platform", name: "Platform Engineering" }],
+      teams: [{ id: "t-search", name: "Search Team", departmentId: "d-platform", departmentName: "Platform Engineering" }],
+    } });
     if (path === "/api/articles/preview") {
       if (state.previewFails) return route.fulfill({ status: 503, json: { message: "预览服务暂时不可用" } });
       return route.fulfill({ json: { renderedHtml, plainText: "缓存一致性" } });
@@ -153,7 +157,7 @@ test("发布失败后重试更新同一草稿，全公司请求不携带旧组�
   await page.getByLabel("文章标题", { exact: true }).fill("缓存实践");
   await page.getByLabel("正文内容", { exact: true }).fill(source);
   await page.getByLabel("可见性", { exact: true }).selectOption("TEAM");
-  await page.getByLabel("目标组织 ID", { exact: true }).fill("t-search");
+  await page.getByRole("checkbox", { name: "选择团队 Search Team", exact: true }).check();
   await page.getByLabel("可见性", { exact: true }).selectOption("COMPANY");
   await page.getByRole("button", { name: "提交发布", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("草稿已保存，发布未完成");

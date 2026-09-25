@@ -6,6 +6,7 @@ import { api, type CatalogItem } from "@/api/client";
 import { articleSource, filterCatalog, MAX_ARTICLE_SOURCE_LENGTH, type ArticleFormat } from "@/articleEditor";
 import { canEditArticle } from "@/articlePresentation";
 import { useAuth } from "@/auth/auth";
+import OrgScopeSelector from "@/components/OrgScopeSelector.vue";
 
 const props = defineProps<{ id?: string }>();
 const router = useRouter();
@@ -17,7 +18,8 @@ const format = ref<ArticleFormat>("markdown");
 const tags = ref<string[]>([]);
 const categoryId = ref("");
 const visibility = ref("COMPANY");
-const targetOrg = ref("");
+const targetOrgs = ref<string[]>([]);
+const orgScopeValid = ref(false);
 const busy = ref(false);
 const loading = ref(false);
 const loadError = ref("");
@@ -49,14 +51,18 @@ const unavailableCategory = computed(() => !!categoryId.value && !catalogCategor
 const canSave = computed(() => !busy.value && !loading.value && !loadError.value && !catalogLoading.value && !catalogError.value
   && !unavailableTags.value.length && !unavailableCategory.value && !!title.value.trim() && !!body.value.trim()
   && body.value.length <= MAX_ARTICLE_SOURCE_LENGTH);
-const canPublish = computed(() => canSave.value && (visibility.value === "COMPANY" || targetOrgIds().length > 0));
+const canPublish = computed(() => canSave.value && (visibility.value === "COMPANY" || orgScopeValid.value));
 const dirty = computed(() => !!baseline.value && !loading.value && !loadError.value && snapshot() !== baseline.value);
 
 function snapshot() {
-  return JSON.stringify([title.value, body.value, format.value, tags.value, categoryId.value, visibility.value, targetOrg.value]);
+  return JSON.stringify([title.value, body.value, format.value, tags.value, categoryId.value, visibility.value, targetOrgs.value]);
 }
 function targetOrgIds() {
-  return visibility.value === "COMPANY" ? [] : [...new Set(targetOrg.value.split(",").map(value => value.trim()).filter(Boolean))];
+  return visibility.value === "COMPANY" ? [] : [...targetOrgs.value];
+}
+function changeVisibility() {
+  targetOrgs.value = [];
+  orgScopeValid.value = false;
 }
 function tagName(id: string) {
   return catalogTags.value.find(item => item.id === id)?.name ?? id;
@@ -92,7 +98,7 @@ async function loadArticle() {
       tags.value = [...article.tagIds];
       categoryId.value = article.categoryId ?? "";
       visibility.value = article.visibilityType ?? "COMPANY";
-      targetOrg.value = article.visibilityTargetIds.join(", ");
+      targetOrgs.value = [...article.visibilityTargetIds];
     } else {
       currentArticleId.value = "";
       title.value = "";
@@ -101,7 +107,7 @@ async function loadArticle() {
       tags.value = [];
       categoryId.value = "";
       visibility.value = "COMPANY";
-      targetOrg.value = "";
+      targetOrgs.value = [];
     }
     baseline.value = snapshot();
   } catch (error) {
@@ -243,9 +249,9 @@ onBeforeUnmount(() => {
             </template>
           </section>
           <div class="form-grid">
-            <label>可见性<select v-model="visibility" aria-label="可见性"><option value="COMPANY">全公司</option><option value="DEPARTMENT">指定部门</option><option value="TEAM">指定团队</option></select></label>
-            <label v-if="visibility !== 'COMPANY'">目标组织 ID<input v-model="targetOrg" aria-label="目标组织 ID" :placeholder="visibility === 'TEAM' ? '例如：t-search，多个 ID 用英文逗号分隔' : '例如：d-platform'" /></label>
+            <label>可见性<select v-model="visibility" aria-label="可见性" @change="changeVisibility"><option value="COMPANY">全公司</option><option value="DEPARTMENT">指定部门</option><option value="TEAM">指定团队</option></select></label>
           </div>
+          <OrgScopeSelector v-model="targetOrgs" :visibility-type="visibility" :disabled="busy" @validity="orgScopeValid = $event" />
           <p class="editor-help">{{ visibility === 'COMPANY' ? '全公司员工可阅读。' : '范围发布将按现有审核策略处理。' }}可见范围在提交发布时生效，保存草稿只保存正文与分类标签。</p>
           <footer class="form-actions"><button class="button secondary" type="button" :disabled="!canSave" @click="saveDraft"><Save :size="17" /> 保存草稿</button><button class="button primary" type="submit" :disabled="!canPublish"><Send :size="17" /> {{ busy ? "处理中" : "提交发布" }}</button></footer>
         </fieldset>
