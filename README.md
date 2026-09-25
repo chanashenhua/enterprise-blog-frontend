@@ -43,7 +43,11 @@ VITE_MOCK_OIDC_TOKEN=local-dev-token
 
 员工端文章编辑器支持 Markdown 编辑、对照和服务端预览；分类与标签支持搜索选择。重新编辑时读取源文，旧文章保持纯文本模式。未保存离开时有提醒，暂不支持自动保存。更新后需要在 IDEA 重新加载 Maven 并重启文章服务（新增 CommonMark 依赖），否则新正文格式和预览接口不可用。
 
-预览不会保存文章；分类标签服务或预览失败可重试，内容不会被清空。正文上限 100,000 字符，不支持原始 HTML 执行或表格等 Markdown 扩展。组织范围目前仍使用 ID 输入，后续改为目录搜索多选。
+预览不会保存文章；分类标签服务或预览失败可重试，内容不会被清空。正文上限 100,000 字符，不支持原始 HTML 执行或表格等 Markdown 扩展。
+
+组织范围支持部门／团队名称搜索和多选，团队也可按所属部门搜索。作者仅能选择自己所属的组织，管理员可选全部现存组织；后端仍逐一校验权限及组织存在性，前端选择器不是安全边界。范围切换会清空旧目标，已失效目标必须显式移除。组织目录失败可重试、保留正文并允许保存草稿，但不能提交指定组织发布。范围设置仍只在提交发布时生效，保存草稿不保存发布设置。
+
+更新后需启动 `OrgServiceApplication`（8082，`local` Profile），重启 Config Server、Gateway、Permission Service 和 Article Service。组织及文章服务本地已配置相同的开发令牌 `local-org-token`；如设置 `INTERNAL_ORG_TOKEN`，两端必须一致，非本地环境必须注入独立密钥，不能使用此公开开发值。详细步骤见后端仓库 `docs/local-ide-startup.md` 和 `docs/api/organization-scope.md`。
 
 ```powershell
 cd web-portal
@@ -64,7 +68,7 @@ npm test
 cd e2e
 $env:E2E_PORTAL_URL='http://127.0.0.1:5173'
 $env:E2E_ADMIN_URL='http://127.0.0.1:5174'
-npm test -- article-editor.spec.ts auth-boundaries.spec.ts --project=chromium --workers=2
+npm test -- article-editor.spec.ts auth-boundaries.spec.ts organization-scope.spec.ts --project=chromium --workers=2
 ```
 
-运行前需启动两端 Vite 开发服务。2026-09-25 回归：员工端 50 项单元测试、管理端 37 项，两端构建、16 项浏览器测试及 1440px／390px 布局验收通过；这不等同于完整后端联调或部署验收。
+运行前需启动两端 Vite 开发服务。2026-09-25 回归：员工端 55 项单元测试、管理端 37 项，两端构建、24 项浏览器测试及 1440px／390px 布局验收通过；浏览器 API 使用测试桩，不等同于完整后端联调或部署验收。

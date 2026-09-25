@@ -16,6 +16,15 @@ beforeEach(async () => {
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("authenticated API client", () => {
+  it("loads organization options with the current identity and memberships", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"departments":[],"teams":[]}'));
+    vi.stubGlobal("fetch", fetchMock);
+    await api.listPublishOrganizations();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/organizations/publish-options");
+    expect((init.headers as Headers).get("X-Mock-Departments")).toBe("d-platform");
+    expect((init.headers as Headers).get("X-Mock-Teams")).toBe("t-search");
+  });
   it("injects the current session identity without a userId argument", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);

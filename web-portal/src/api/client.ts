@@ -1,4 +1,5 @@
 import { AuthenticationRequiredError, authorizationContext, handleUnauthorized } from "@/auth/auth";
+import type { OrganizationDirectory } from "@/organizationScope";
 import { articleContentJson, type ArticleFormat } from "@/articleEditor";
 export { articleContentJson } from "@/articleEditor";
 
@@ -174,6 +175,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  listPublishOrganizations() {
+    return request<OrganizationDirectory>("/organizations/publish-options");
+  },
   previewArticle(text: string, format: ArticleFormat = "markdown") {
     return request<{ renderedHtml: string; plainText: string }>("/articles/preview", {
       method: "POST", body: JSON.stringify({ contentJson: articleContentJson(text, format) }),

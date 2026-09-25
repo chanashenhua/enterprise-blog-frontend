@@ -13,7 +13,7 @@ async function publishTeamArticle(page: Page, title: string): Promise<string> {
   await page.getByLabel("查找标签").fill("elasticsearch");
   await page.getByRole("button", { name: /^标签 / }).first().click();
   await page.getByLabel("可见性").selectOption("TEAM");
-  await page.getByLabel(/目标.*ID/).fill("t-search");
+  await page.getByRole("checkbox", { name: "选择团队 Search Team", exact: true }).check();
   await page.getByRole("button", { name: "提交发布" }).click();
   await expect(page).toHaveURL(/\/articles\/[^/]+$/);
   return page.url().split("/").at(-1)!;
