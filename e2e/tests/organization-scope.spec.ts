@@ -14,7 +14,8 @@ async function setup(page: Page, account = "u-author", existingTargets: string[]
     unavailable: false,
     directoryRequests: 0,
     writes: [] as { path: string; body: any }[],
-    article: { id: "scope-draft", title: "组织知识共享", authorId: account, status: "DRAFT",
+    article: { id: "scope-draft", title: "组织知识共享", authorId: account, status: "DRAFT", revision: 1,
+      updatedAt: "2026-09-26T04:00:00Z",
       contentJson: JSON.stringify({ type: "markdown", version: 1, source: "## 共享边界\n\n保存组织知识。" }),
       renderedHtml: "<p>保存组织知识。</p>", plainText: "保存组织知识。", tagIds: [], categoryId: null,
       visibilityType: existingTargets.length ? "TEAM" : "COMPANY", visibilityTargetIds: existingTargets },
@@ -31,10 +32,11 @@ async function setup(page: Page, account = "u-author", existingTargets: string[]
     if (request.method() === "POST" || request.method() === "PUT") {
       const body = request.postDataJSON();
       state.writes.push({ path, body });
+      expect(body.expectedRevision).toBe(state.article.revision);
       state.article = path.endsWith("/submit-publish")
         ? { ...state.article, status: body.visibilityType === "COMPANY" ? "PUBLISHED" : "PENDING_REVIEW",
-          visibilityType: body.visibilityType, visibilityTargetIds: body.targetOrgIds }
-        : { ...state.article, ...body };
+          visibilityType: body.visibilityType, visibilityTargetIds: body.targetOrgIds, revision: state.article.revision + 1 }
+        : { ...state.article, ...body, revision: state.article.revision + 1 };
       return route.fulfill({ json: state.article });
     }
     return route.fulfill({ json: path.endsWith("/unread-count") ? { count: 0 }
@@ -65,7 +67,8 @@ test("管理员按部门名称搜索多选，提交准确 ID 并进入审核", a
   await expect(page.locator(".org-scope-summary")).toContainText("平台工程部、支付工程部");
   await submit(page).click();
   await expect(page).toHaveURL(/\/articles\/scope-draft$/);
-  expect(state.writes.at(-1)?.body).toEqual({ visibilityType: "DEPARTMENT", targetOrgIds: ["d-platform", "d-pay"], reviewRequired: true });
+  expect(state.writes.at(-1)?.body).toMatchObject({ visibilityType: "DEPARTMENT", targetOrgIds: ["d-platform", "d-pay"], reviewRequired: true,
+    expectedRevision: state.article.revision - 1 });
   expect(state.article.status).toBe("PENDING_REVIEW");
 });
 
@@ -82,7 +85,8 @@ test("作者按所属部门搜索团队，仅使用服务端返回的选项", as
   await expect(page.locator(".org-scope-summary")).toContainText("搜索团队 · 平台工程部");
   await submit(page).click();
   await expect(page).toHaveURL(/\/articles\/scope-draft$/);
-  expect(state.writes.at(-1)?.body).toEqual({ visibilityType: "TEAM", targetOrgIds: ["t-search"], reviewRequired: true });
+  expect(state.writes.at(-1)?.body).toMatchObject({ visibilityType: "TEAM", targetOrgIds: ["t-search"], reviewRequired: true,
+    expectedRevision: state.article.revision - 1 });
 });
 
 test("部门、团队、全公司切换清除之前范围，草稿不携带发布设置", async ({ page }) => {
@@ -97,7 +101,8 @@ test("部门、团队、全公司切换清除之前范围，草稿不携带发�
   await submit(page).click();
   await expect(page).toHaveURL(/\/articles\/scope-draft$/);
   expect(state.writes[0].body).not.toHaveProperty("targetOrgIds");
-  expect(state.writes.at(-1)?.body).toEqual({ visibilityType: "COMPANY", targetOrgIds: [], reviewRequired: false });
+  expect(state.writes.at(-1)?.body).toMatchObject({ visibilityType: "COMPANY", targetOrgIds: [], reviewRequired: false,
+    expectedRevision: state.article.revision - 1 });
 });
 
 test("恢复文章保留失效组织并阻止发布，显式移除后可重新选择", async ({ page }) => {

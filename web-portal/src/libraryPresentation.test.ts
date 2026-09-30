@@ -14,6 +14,8 @@ const article: Article = {
   contentJson: "{}",
   renderedHtml: "<p>内容</p>",
   plainText: "内容",
+  revision: 1,
+  updatedAt: "2026-09-26T00:00:00Z",
 };
 
 describe("个人知识库展示", () => {

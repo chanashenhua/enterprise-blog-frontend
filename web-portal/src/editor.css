@@ -4,8 +4,13 @@
 .writing-studio .view-header { align-items: end; }
 .editor-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 22px; }
 .editor-fields:disabled { opacity: .7; }
-.editor-save-state { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; color: #677c75; font-size: 12px; padding-bottom: 5px; }
-.editor-save-state i { width: 7px; height: 7px; border-radius: 50%; background: #338978; }
+.editor-save-state { display: inline-flex; align-items: center; gap: 8px; color: #677c75; font-size: 12px; padding-bottom: 5px; line-height: 1.7; }
+.editor-save-state i { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #338978; }
+.editor-conflict { margin-bottom: 20px; }
+.server-draft { min-width: 0; margin-top: 18px; }
+.server-draft h2 { font-size: 18px; overflow-wrap: anywhere; }
+.server-draft pre { max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; border-radius: 8px; background: #fffefa; color: #334c40; }
+.server-draft .form-actions { flex-wrap: wrap; }
 .editor-save-state i.unsaved { background: #bd8038; }
 .editor-toolbar { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
 .editor-format-label { max-width: 220px; }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authTesting, configureUnauthorizedHandler, initializeAuth, LocalDemoAuthProvider, login, useAuth } from "@/auth/auth";
-import { api } from "./client";
+import { api, ApiError } from "./client";
 
 function memoryStorage() {
   const values = new Map<string, string>();
@@ -40,11 +40,11 @@ describe("authenticated API client", () => {
   it("sends the complete draft projection", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
-    await api.updateDraft("article-1", "新标题", "新正文", ["java"], "backend");
+    await api.updateDraft("article-1", "新标题", "新正文", ["java"], "backend", "markdown", { expectedRevision: 3, autosave: true });
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/articles/article-1/draft");
     expect(init.method).toBe("PUT");
-    expect(JSON.parse(init.body as string)).toEqual({ title: "新标题", contentJson: JSON.stringify({ type: "markdown", version: 1, source: "新正文" }), tagIds: ["java"], categoryId: "backend" });
+    expect(JSON.parse(init.body as string)).toEqual({ title: "新标题", contentJson: JSON.stringify({ type: "markdown", version: 1, source: "新正文" }), tagIds: ["java"], categoryId: "backend", expectedRevision: 3, autosave: true });
   });
 
   it("clears the session and redirects only once on concurrent 401 responses", async () => {
@@ -63,6 +63,22 @@ describe("authenticated API client", () => {
     await expect(api.listMyArticles()).rejects.toThrow("无权访问");
     expect(useAuth().isAuthenticated.value).toBe(true);
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("preserves conflict status so the editor pauses without ending the session", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response('{"message":"草稿已更新"}', { status: 409 })));
+    const result = api.updateDraft("article-1", "标题", "正文", [], null, "markdown", { expectedRevision: 2, autosave: true });
+    await expect(result).rejects.toMatchObject({ status: 409, message: "草稿已更新" });
+    await expect(result).rejects.toBeInstanceOf(ApiError);
+    expect(useAuth().isAuthenticated.value).toBe(true);
+  });
+
+  it("publishes exactly the revision that was saved", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}"));
+    vi.stubGlobal("fetch", fetchMock);
+    await api.publish("article-1", "COMPANY", [], false, 7);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ visibilityType: "COMPANY", targetOrgIds: [], reviewRequired: false, expectedRevision: 7 });
   });
 
   it("previews through the current identity without a draft write", async () => {

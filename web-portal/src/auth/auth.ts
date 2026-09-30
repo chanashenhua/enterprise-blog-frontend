@@ -1,4 +1,5 @@
 import { computed, readonly, ref } from "vue";
+import { clearRecoveries, pruneRecoveries } from "../draftRecovery";
 
 export type AppRole = "ADMIN" | "REVIEWER" | "AUTHOR" | "READER";
 export type DemoUserId = "u-admin" | "u-author" | "u-reader";
@@ -184,6 +185,7 @@ let unauthorizedHandler: (() => Promise<void> | void) | null = null;
 let unauthorizedHandling: Promise<void> | null = null;
 let generation = 0;
 let requests = new AbortController();
+let listeningWindow: Window | null = null;
 
 function invalidateRequests() {
   generation++;
@@ -191,17 +193,53 @@ function invalidateRequests() {
   requests = new AbortController();
 }
 
+function handleSessionStorageChange(event: StorageEvent) {
+  if (provider.mode !== "local" || !session.value || (event.key !== STORAGE_KEY && event.key !== null)) return;
+  try {
+    if (event.storageArea && event.storageArea !== window.localStorage) return;
+  } catch { return; }
+  let nextUserId: DemoUserId | null = null;
+  try {
+    const next = event.newValue ? JSON.parse(event.newValue) as { version?: unknown; userId?: unknown } : null;
+    if (next?.version === STORAGE_VERSION) nextUserId = resolveUserId(next.userId);
+  } catch { /* A corrupt shared session is no longer usable. */ }
+  if (nextUserId === session.value.user.id) return;
+  invalidateRequests();
+  session.value = null;
+  authError.value = "其他标签页已切换账号或退出，请重新登录";
+  clearRecoveries();
+  // Do not call provider.logout(): it would remove the account just saved by the other tab.
+  if (!unauthorizedHandling) {
+    unauthorizedHandling = Promise.resolve().then(() => unauthorizedHandler?.()).then(() => undefined)
+      .finally(() => { unauthorizedHandling = null; });
+    void unauthorizedHandling.catch(() => { /* Router failure must not restore the invalid session. */ });
+  }
+}
+
+function listenForSessionChanges() {
+  if (typeof window === "undefined" || listeningWindow === window) return;
+  listeningWindow?.removeEventListener("storage", handleSessionStorageChange);
+  window.addEventListener("storage", handleSessionStorageChange);
+  listeningWindow = window;
+}
+
 export async function initializeAuth(): Promise<AuthSession | null> {
+  listenForSessionChanges();
   if (initialized.value) return session.value;
   if (!initialization) {
     const started = generation;
     initialization = provider.initialize().then((restored) => {
-      if (started === generation) session.value = restored;
+      if (started === generation) {
+        session.value = restored;
+        if (restored) pruneRecoveries(restored.user.id);
+        else clearRecoveries();
+      }
       return session.value;
     }).catch((reason: unknown) => {
       if (started === generation) {
         authError.value = reason instanceof Error ? reason.message : "认证初始化失败";
         session.value = null;
+        clearRecoveries();
       }
       return session.value;
     }).finally(() => { initialized.value = true; });
@@ -219,6 +257,7 @@ export async function login(input: unknown): Promise<AuthSession> {
     const next = await provider.login(input);
     if (started !== generation) throw new AuthenticationRequiredError();
     session.value = next;
+    pruneRecoveries(next.user.id);
     return next;
   } catch (reason) {
     if (started === generation) authError.value = reason instanceof Error ? reason.message : "登录失败";
@@ -230,6 +269,7 @@ export async function logout(): Promise<void> {
   invalidateRequests();
   session.value = null;
   authError.value = null;
+  clearRecoveries();
   await provider.logout();
 }
 
