@@ -16,7 +16,7 @@ test("员工端首次访问、刷新保持与退出登录", async ({ page }) => 
 test("非法 redirect 不会离开当前应用", async ({ page }) => {
   await page.goto("/login?redirect=https://evil.example");
   await page.getByRole("button", { name: /u-reader 登录$/ }).click();
-  await expect(page).toHaveURL(/http:\/\/localhost:5173\/$/);
+  await expect(page).toHaveURL(new URL("/", process.env.E2E_PORTAL_URL ?? "http://localhost:5173").href);
 });
 
 test("非管理员不会加载管理接口", async ({ browser }) => {

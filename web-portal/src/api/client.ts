@@ -15,6 +15,8 @@ export type Article = {
   contentJson: string;
   renderedHtml: string;
   plainText: string;
+  revision: number;
+  updatedAt: string;
 };
 
 export type ArticleContentVersion = {
@@ -150,6 +152,15 @@ export type SaveKnowledgeCollection = {
 
 type SearchResponse = { items: SearchArticle[]; total: number; page: number; size: number };
 
+export class ApiError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export type DraftSaveOptions = { expectedRevision?: number; autosave?: boolean; clientDraftId?: string };
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const auth = await authorizationContext();
   const headers = new Headers(auth.headers);
@@ -167,7 +178,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     auth.assertCurrent();
     let message = raw || "请求失败";
     try { message = (JSON.parse(raw) as { message?: string }).message || message; } catch { /* Plain text errors are also supported. */ }
-    throw new Error(message);
+    throw new ApiError(response.status, message);
   }
   const result = response.status === 204 ? undefined : await response.json();
   auth.assertCurrent();
@@ -183,10 +194,10 @@ export const api = {
       method: "POST", body: JSON.stringify({ contentJson: articleContentJson(text, format) }),
     });
   },
-  createDraft(title: string, text: string, tagIds: string[], categoryId: string | null = null, format: ArticleFormat = "markdown") {
+  createDraft(title: string, text: string, tagIds: string[], categoryId: string | null = null, format: ArticleFormat = "markdown", options: DraftSaveOptions = {}) {
     return request<Article>("/articles/drafts", {
       method: "POST",
-      body: JSON.stringify({ title, contentJson: articleContentJson(text, format), tagIds, categoryId }),
+      body: JSON.stringify({ title, contentJson: articleContentJson(text, format), tagIds, categoryId, ...options }),
     });
   },
   updateDraft(
@@ -196,16 +207,17 @@ export const api = {
     tagIds: string[],
     categoryId: string | null = null,
     format: ArticleFormat = "markdown",
+    options: { expectedRevision: number; autosave?: boolean },
   ) {
     return request<Article>(`/articles/${articleId}/draft`, {
       method: "PUT",
-      body: JSON.stringify({ title, contentJson: articleContentJson(text, format), tagIds, categoryId }),
+      body: JSON.stringify({ title, contentJson: articleContentJson(text, format), tagIds, categoryId, ...options }),
     });
   },
-  publish(articleId: string, visibilityType: string, targetOrgIds: string[], reviewRequired: boolean) {
+  publish(articleId: string, visibilityType: string, targetOrgIds: string[], reviewRequired: boolean, expectedRevision: number) {
     return request<Article>(`/articles/${articleId}/submit-publish`, {
       method: "POST",
-      body: JSON.stringify({ visibilityType, targetOrgIds, reviewRequired }),
+      body: JSON.stringify({ visibilityType, targetOrgIds, reviewRequired, expectedRevision }),
     });
   },
   getArticle(articleId: string) {

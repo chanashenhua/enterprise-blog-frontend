@@ -6,7 +6,8 @@ const markdown = (text: string) => JSON.stringify({ type: "markdown", version: 1
 
 async function setup(page: Page, overrides: Record<string, unknown> = {}) {
   const state = {
-    article: { id: "draft-1", authorId: "u-author", title: "缓存实践", status: "DRAFT", contentJson: markdown(source),
+    article: { id: "draft-1", authorId: "u-author", title: "缓存实践", status: "DRAFT", revision: 1,
+      updatedAt: "2026-09-26T04:00:00Z", contentJson: markdown(source),
       renderedHtml, plainText: "这里不是原始 Markdown", categoryId: "backend", tagIds: ["redis"],
       visibilityType: null, visibilityTargetIds: [], ...overrides },
     catalogFails: false, previewFails: false, publishFails: false,
@@ -35,8 +36,12 @@ async function setup(page: Page, overrides: Record<string, unknown> = {}) {
       state.writes.push({ path, method, body });
       if (path.endsWith("/submit-publish")) {
         if (state.publishFails) return route.fulfill({ status: 503, json: { message: "发布服务暂时不可用" } });
-        state.article = { ...state.article, status: "PUBLISHED" };
-      } else state.article = { ...state.article, ...body };
+        expect(body.expectedRevision).toBe(state.article.revision);
+        state.article = { ...state.article, status: "PUBLISHED", revision: state.article.revision + 1 };
+      } else {
+        if (method === "PUT") expect(body.expectedRevision).toBe(state.article.revision);
+        state.article = { ...state.article, ...body, revision: method === "POST" ? 1 : state.article.revision + 1 };
+      }
       return route.fulfill({ json: state.article });
     }
     const data = path.endsWith("/unread-count") ? { count: 0 }
@@ -53,6 +58,10 @@ async function setup(page: Page, overrides: Record<string, unknown> = {}) {
 test("Markdown 预览不保存，保存后再次编辑完整恢复源文", async ({ page }) => {
   const state = await setup(page);
   await page.goto("/articles/new");
+  // 冻结自动保存倒计时，仅推进预览的 400ms，验证预览动作本身不会写草稿。
+  const clockTime = new Date("2026-09-26T04:00:00Z");
+  await page.clock.install({ time: clockTime });
+  await page.clock.pauseAt(new Date(clockTime.getTime() + 1000));
   await page.getByLabel("文章标题", { exact: true }).fill("缓存实践");
   await page.getByLabel("正文内容", { exact: true }).fill(source);
   await page.getByLabel("查找分类").fill("后端");
@@ -61,10 +70,13 @@ test("Markdown 预览不保存，保存后再次编辑完整恢复源文", async
   await page.getByRole("button", { name: "标签 Redis 缓存", exact: true }).click();
   const request = page.waitForRequest(r => r.url().endsWith("/articles/preview"));
   await page.getByRole("button", { name: "对照", exact: true }).click();
+  await page.clock.runFor(450);
   expect((await request).postDataJSON()).toEqual({ contentJson: markdown(source) });
   await expect(page.getByRole("region", { name: "正文预览" }).getByRole("heading", { name: "问题背景" })).toBeVisible();
   expect(state.writes).toHaveLength(0);
   await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  // 导航包含 Vue 的 out-in 动画；恢复时间让页面正常完成切换。
+  await page.clock.resume();
   await expect(page).toHaveURL(/\/articles\/draft-1$/);
   expect(state.writes[0]).toMatchObject({ method: "POST", body: { title: "缓存实践", contentJson: markdown(source), tagIds: ["redis"], categoryId: "backend" } });
   await page.getByRole("link", { name: "编辑", exact: true }).click();
