@@ -8,8 +8,8 @@ async function login(page: Page, userId: "u-admin" | "u-author" | "u-reader", ba
 async function publishTeamArticle(page: Page, title: string): Promise<string> {
   await login(page, "u-author");
   await page.goto("/articles/new");
-  await page.getByLabel("标题").fill(title);
-  await page.getByLabel("正文").fill("仅 Search Team 成员可阅读的索引实践。");
+  await page.getByLabel("文章标题", { exact: true }).fill(title);
+  await page.getByLabel("正文内容", { exact: true }).fill("仅 Search Team 成员可阅读的索引实践。");
   await page.getByLabel("查找标签").fill("elasticsearch");
   await page.getByRole("button", { name: /^标签 / }).first().click();
   await page.getByLabel("可见性").selectOption("TEAM");
@@ -34,7 +34,7 @@ async function approveArticle(browser: Browser, articleId: string) {
 async function search(page: Page, title: string) {
   await page.goto("/search");
   await page.getByLabel("搜索文章").fill(title);
-  await page.getByRole("button", { name: "搜索" }).click();
+  await page.getByRole("button", { name: "搜索知识", exact: true }).click();
 }
 
 test("非团队成员无法检索审核通过的团队文章", async ({ browser }) => {

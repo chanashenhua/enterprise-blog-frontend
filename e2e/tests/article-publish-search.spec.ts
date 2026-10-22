@@ -9,8 +9,8 @@ async function login(page: Page, userId: "u-admin" | "u-author" | "u-reader") {
 async function publishCompanyArticle(page: Page, title: string) {
   await login(page, "u-author");
   await page.goto("/articles/new");
-  await page.getByLabel("标题").fill(title);
-  await page.getByLabel("正文").fill("Redis 通过淘汰策略与持久化设计保障缓存可靠性。");
+  await page.getByLabel("文章标题", { exact: true }).fill(title);
+  await page.getByLabel("正文内容", { exact: true }).fill("Redis 通过淘汰策略与持久化设计保障缓存可靠性。");
   await page.getByLabel("查找标签").fill("redis");
   await page.getByRole("button", { name: /^标签 / }).first().click();
   await page.getByLabel("可见性").selectOption("COMPANY");
@@ -25,7 +25,7 @@ test("作者发布的公司文章可被搜索", async ({ page }) => {
     await page.goto(`/search?q=${encodeURIComponent(title)}`);
     const searchInput = page.getByLabel("搜索文章");
     await searchInput.fill(title);
-    await page.getByRole("button", { name: "搜索" }).click();
+    await page.getByRole("button", { name: "搜索知识", exact: true }).click();
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }).toPass({ timeout: 60_000, intervals: [1_000, 2_000, 5_000] });
 });

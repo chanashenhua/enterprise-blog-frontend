@@ -85,6 +85,8 @@ export type UserNotification = {
 };
 
 export type SearchArticle = {
+  titleHighlights?: SearchHighlightPart[];
+  summaryHighlights?: SearchHighlightPart[];
   articleId: string;
   title: string;
   summary: string;
@@ -150,7 +152,9 @@ export type SaveKnowledgeCollection = {
   articleIds: string[];
 };
 
-type SearchResponse = { items: SearchArticle[]; total: number; page: number; size: number };
+export type SearchHighlightPart = { text: string; matched: boolean };
+export type SearchOptions = { categoryId?: string; tagId?: string; page?: number; size?: number; sort?: "relevance" | "latest" };
+export type SearchResponse = { items: SearchArticle[]; total: number | null; page: number; size: number; hasMore: boolean; limited: boolean };
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string) {
@@ -305,8 +309,12 @@ export const api = {
   markAllNotificationsRead() {
     return request<{ count: number }>("/notifications/read-all", { method: "PUT" });
   },
-  search(query: string) {
-    return request<SearchResponse>(`/search/articles?q=${encodeURIComponent(query)}`);
+  search(query: string, options: SearchOptions = {}) {
+    const params = new URLSearchParams({ q: query });
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== "") params.set(key, String(value));
+    }
+    return request<SearchResponse>(`/search/articles?${params.toString()}`);
   },
   homeFeed(limit = 6) {
     return request<HomeFeed>(`/articles/feed?limit=${limit}`);

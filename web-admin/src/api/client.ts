@@ -1,7 +1,7 @@
 import { AuthenticationRequiredError, authorizationContext, handleUnauthorized } from "@/auth/auth";
 
 export type ReviewTicket = { id: string; articleId: string; status: string };
-export type SearchTask = { id: string; articleId: string; status: string; retryCount: number };
+export type SearchTask = { id: string; articleId: string; eventType: string; status: string; retryCount: number };
 export type Tag = { id: string; name: string };
 export type AuditRecord = {
   id: string;
@@ -143,8 +143,9 @@ export const api = {
   reviews: () => request<ReviewTicket[]>("/admin/reviews"),
   approve: (id: string) => request<ReviewTicket>(`/admin/reviews/${id}/approve`, { method: "POST" }),
   reject: (id: string, comment: string) => request<ReviewTicket>(`/admin/reviews/${id}/reject`, { method: "POST", body: JSON.stringify({ comment }) }),
-  searchTasks: () => request<SearchTask[]>("/admin/search/tasks"),
+  searchTasks: (status = "FAILED") => request<SearchTask[]>(`/admin/search/tasks?status=${encodeURIComponent(status)}`),
   retryTask: (id: string) => request<void>(`/admin/search/tasks/${id}/retry`, { method: "POST" }),
+  reindexArticles: () => request<{ queued: number }>("/admin/search/tasks/reindex", { method: "POST" }),
   tags: () => request<Tag[]>("/admin/tags"),
   audits: (filters: AuditFilters = {}) => {
     const params = new URLSearchParams();

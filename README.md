@@ -41,7 +41,7 @@ VITE_MOCK_OIDC_TOKEN=local-dev-token
 
 ## 验证
 
-员工端文章编辑器支持 Markdown 编辑、对照和服务端预览；分类与标签支持搜索选择。重新编辑时读取源文，旧文章保持纯文本模式。标题、正文和分类标签有效时，停止输入 2 秒后自动保存，保存期间可以继续输入；未保存离开时仍有提醒。更新前后端后需重启文章服务，使 Flyway 执行新增的 V8 修订号迁移，否则编辑器会提示缺少修订号并停止保存。
+员工端文章编辑器支持 Markdown 编辑、对照和服务端预览；分类与标签支持搜索选择。重新编辑时读取源文，旧文章保持纯文本模式。标题、正文和分类标签有效时，停止输入 2 秒后自动保存，保存期间可以继续输入；未保存离开时仍有提醒。更新前后端时需先完成 V8 修订号迁移，再重启文章服务。**本机共享数据库的 `local` Profile 关闭 Flyway，仅重启不会迁移**，必须按后端 `docs/api/local-demo.md` 备份并手动执行一次 V8；独立数据库且启用 Flyway 的环境使用自动迁移。缺少修订号时编辑器会停止保存。
 
 预览不会保存文章；分类标签服务或预览失败可重试，内容不会被清空。正文上限 100,000 字符，不支持原始 HTML 执行或表格等 Markdown 扩展。
 
@@ -78,3 +78,37 @@ npm test -- article-editor.spec.ts draft-autosave.spec.ts auth-boundaries.spec.t
 ```
 
 运行前需启动两端 Vite 开发服务。2026-09-30 回归：员工端 103 项单元测试、管理端 37 项，两端构建及累计 43 项 Chromium 浏览器用例通过（42 项完整回归后，恢复基线修复新增 1 项，并重跑全部 15 项草稿自动保存与恢复用例）。1440px／390px 布局验收通过；浏览器 API 使用测试桩，不等同于完整后端联调或部署验收。
+
+### 无 Elasticsearch 的真实本机联调
+
+完成后端单库迁移，按后端 `docs/local-ide-startup.md` 启动 Gateway、注册配置中心及业务服务，再启动两个 Vite。标签服务的本地配置使用内存缓存；搜索投递默认暂停并保留队列，因此无需启动 Elasticsearch 或 MinIO。
+
+```powershell
+cd e2e
+npm run test:live:articles
+```
+
+套件默认使用员工端 `http://127.0.0.1:5173`、管理端 `http://127.0.0.1:5174`、Gateway `http://127.0.0.1:8080`；可分别用 `E2E_PORTAL_URL`、`E2E_ADMIN_URL`、`E2E_API_URL` 覆盖。模拟令牌默认 `local-dev-token`，自定义时设置 `E2E_MOCK_TOKEN` 并保持两个 Vite 和 Gateway 一致。浏览器使用已安装的 Chrome。
+
+7 项真实测试覆盖并发幂等创建、修订冲突无副作用、自动保存与发布竞态、历史快照、离线刷新恢复、双窗口冲突选择，以及管理端审核通过和退回。不拦截业务 API 响应；刷新恢复测试仅暂停浏览器计时器并切换离线状态。测试创建带随机 `LIVE-` 前缀的文章，只清理本项创建的待审核单并软删除自己的文章，审计与历史记录按业务规则保留；不要指向生产数据库。配置与默认浏览器回归独立，可单独运行，不要求搜索索引可用。
+
+### Elasticsearch 搜索
+
+员工端 `/search` 支持全文关键词、高亮、分类／标签组合过滤、相关程度／最新发布排序和分页。筛选与页码写入地址栏，刷新和浏览器返回可恢复；高亮内容通过纯文本渲染，不执行 HTML。总数只展示已完成权限核验的准确值，未确定时使用上一页／下一页导航；达到候选扫描上限时提示缩小范围。
+
+管理端 `/search-tasks` 可查看失败／待处理任务，重试发布、撤回、删除和同步任务，也可重新同步全部文章。普通作者和读者不能访问管理接口。搜索读取前由后端再核对文章当前状态、修订和权限，已撤回或无权访问的旧索引不会显示。
+
+后端的 `docs/local-elasticsearch.md` 说明 D 盘本地安装与启停。启动 Elasticsearch，并使用后端脚本 `start-local-services.ps1 -IncludeSearch`；现有文章可从管理端排入全量同步。两个 Vite 与 Gateway 令牌保持一致。
+
+```powershell
+cd e2e
+npm run test:live:search  # 4 项真实搜索场景，需 ES、完整后端和两端 Vite
+npm run test:live        # 同时运行 7 项文章联调和 4 项搜索联调
+npm test -- search-ui.spec.ts --project=chromium --workers=1
+```
+
+搜索联调使用随机 `SEARCHLIVE-` 前缀并只清理自己的文章，验证高亮筛选、排序分页、撤回删除与旧修订防覆盖、团队权限及全量同步；会对测试文章注入过期索引以核验权限边界。ES 地址默认 `http://127.0.0.1:9200`，搜索服务默认 `http://127.0.0.1:8088`；可用 `E2E_ELASTICSEARCH_URL`、`E2E_SEARCH_SERVICE_URL`、`E2E_SEARCH_TOKEN` 覆盖。`search-ui.spec.ts` 的 4 项浏览器测试使用 API 测试桩，覆盖异常重试、纯文本高亮、请求竞态、翻页保持已提交关键词及失败任务恢复。
+
+在 D 盘安装新依赖前设置 `$env:npm_config_cache='D:\NodeCache\enterprise-blog'`；已有 `node_modules` 可直接复用。
+
+2026-10-22：员工端 104 项、管理端 38 项单元测试及两端生产构建通过；Chromium 46 项完整回归后新增翻页边界用例，4 项搜索 UI 用例全部通过，共覆盖 47 项不同页面用例。11 项真实 PostgreSQL／Elasticsearch 联调通过。搜索桌面与 390px 手机截图已检查，无横向溢出。后端另有实际停机恢复测试，详见其 `docs/search-verification-2026-10-22.md`。

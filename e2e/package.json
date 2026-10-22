@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:live": "playwright test --config=playwright.live.config.ts",
+    "test:live:articles": "playwright test --config=playwright.live.config.ts article-workflow.spec.ts",
+    "test:live:search": "playwright test --config=playwright.live.config.ts search-workflow.spec.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.49.1"
