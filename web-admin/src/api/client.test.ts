@@ -7,6 +7,17 @@ beforeEach(async () => { authTesting.replaceProvider(new LocalDemoAuthProvider(s
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("admin API authentication", () => {
+  it("handles an empty retry response, pending tasks and reconciliation", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response("[]")).mockResolvedValueOnce(new Response('{"queued":3}'));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(api.retryTask("event-1")).resolves.toBeUndefined();
+    await api.searchTasks("PENDING");
+    await expect(api.reindexArticles()).resolves.toEqual({ queued: 3 });
+    expect(fetchMock.mock.calls.map(call => call[0])).toEqual([
+      "/api/admin/search/tasks/event-1/retry", "/api/admin/search/tasks?status=PENDING", "/api/admin/search/tasks/reindex",
+    ]);
+  });
   it("injects the current administrator session", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock); await api.reviews();

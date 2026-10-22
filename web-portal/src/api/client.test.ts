@@ -16,6 +16,16 @@ beforeEach(async () => {
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("authenticated API client", () => {
+  it("encodes search filters, pagination and sort without changing literal keywords", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"items":[],"total":null,"hasMore":true,"limited":false}'));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(api.search("C++ & 缓存", { categoryId: "后端", tagId: "redis", page: 2, size: 5, sort: "latest" }))
+      .resolves.toMatchObject({ total: null, hasMore: true });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const params = new URL(url, "http://localhost").searchParams;
+    expect(Object.fromEntries(params)).toEqual({ q: "C++ & 缓存", categoryId: "后端", tagId: "redis", page: "2", size: "5", sort: "latest" });
+    expect((init.headers as Headers).get("X-Mock-User")).toBe("u-author");
+  });
   it("loads organization options with the current identity and memberships", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('{"departments":[],"teams":[]}'));
     vi.stubGlobal("fetch", fetchMock);
